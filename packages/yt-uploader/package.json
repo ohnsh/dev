@@ -1,0 +1,12 @@
+{
+  "name": "yt-uploader",
+  "private": true,
+  "type": "module",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "dependencies": {
+    "@googleapis/youtube": "^33.0.0"
+  }
+}
