@@ -1,0 +1,13 @@
+{
+  "name": "scripts",
+  "private": true,
+  "dependencies": {
+    "square-mask": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

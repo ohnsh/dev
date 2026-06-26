@@ -1,0 +1,21 @@
+{
+  "name": "square-mask",
+  "module": "index.ts",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "square-mask": "./index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "sharp": "^0.35.2"
+  },
+  "prettier": {
+    "semi": false
+  }
+}
