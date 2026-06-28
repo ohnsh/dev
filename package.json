@@ -1,7 +1,7 @@
 {
-  "name": "local-root",
+  "name": "dev",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "mezzanine/*"
   ]
 }
