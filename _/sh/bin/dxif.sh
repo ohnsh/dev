@@ -5,8 +5,6 @@ case "$(pwd)" in
 /Volumes/Backup*) BASE=/Volumes/Backup ;;
 esac
 
-echo test test test
-
 same_file() {
   local sz1 sz2
   # validation error
@@ -63,6 +61,11 @@ move() {
   local bn=$(basename "$1") dn=$(dirname "$1")
   local bnE=IMG_E${bn#IMG_} bnO=IMG_O${bn#IMG_}
   local basedir catdir dest destdir to_move
+
+  if lsof "$1" &>/dev/null; then
+    echo "Skipping open file: $1" >&2
+    return 1
+  fi
 
   case "$bn" in
   IMG_*.* | MMNT_*.*)
