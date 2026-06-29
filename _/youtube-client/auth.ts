@@ -1,5 +1,8 @@
+import { join } from 'node:path'
+// import { readFile } from 'node:fs/promises'
 import google from '@googleapis/youtube'
-import type { ClientConfig } from './credentials'
+import Bun from 'bun'
+import type { ClientConfig } from './client-config'
 
 // const auth = new google.auth.GoogleAuth({ apiKey: process.env.YT_API_KEY });
 // const authClient = await auth.getClient()
@@ -9,45 +12,51 @@ interface Credentials {
   refresh_token: string
 }
 
-export default async function (
-  { client_id, client_secret }: ClientConfig,
-  scope: string,
-) {
-  const { access_token, refresh_token } = await runDeviceFlow(
-    client_id,
-    client_secret,
-  )
+const CREDENTIALS_FILE = join(import.meta.dir, '.credentials.json')
 
-  const oauthClient = new google.auth.OAuth2({
-    client_id,
-    client_secret,
-  })
+async function getCredentials(clientConfig: ClientConfig) {
+  try {
+    const credentials = await Bun.file(CREDENTIALS_FILE).json()
+    return credentials
+    // const json = await readFile(CREDENTIALS_FILE, { encoding: 'utf8' })
+    // return JSON.parse(json)
+  } catch {
+    const credentials = await runDeviceFlow(clientConfig)
+    await Bun.write(CREDENTIALS_FILE, JSON.stringify(credentials))
+    return credentials
+  }
+}
+
+export default async function (clientConfig: ClientConfig) {
+  const { access_token, refresh_token } = await getCredentials(clientConfig)
+
+  const oauthClient = new google.auth.OAuth2(clientConfig)
 
   oauthClient.setCredentials({
     access_token,
     refresh_token,
-    scope,
+    scope: clientConfig.scopes.join(' '),
     token_type: 'Bearer',
   })
 
   return oauthClient
 }
 
-async function runDeviceFlow(
-  client_id: string,
-  client_secret: string,
-): Promise<Credentials> {
-  const SCOPES = 'https://www.googleapis.com/auth/youtube.upload'
-
+async function runDeviceFlow({
+  client_id,
+  client_secret,
+  scopes,
+}: ClientConfig): Promise<Credentials> {
   // STEP 1 & 2: Request device and user codes from Google
   const response = await fetch('https://oauth2.googleapis.com/device/code', {
     method: 'POST',
     body: new URLSearchParams({
       client_id,
-      scope: SCOPES,
+      scope: scopes[1]!,
     }),
   })
 
+  console.log(response)
   const json = await response.json()
   const { device_code, user_code, verification_url, interval, expires_in } =
     json
@@ -93,6 +102,7 @@ async function runDeviceFlow(
         }
       }
 
+      console.log('Authorization succeeded.')
       clearInterval(pollTimer)
       resolve(tokenData)
     }, pollIntervalMs)
