@@ -2,7 +2,7 @@
   "name": "scripts",
   "private": true,
   "dependencies": {
-    "square-mask": "workspace:*",
+    "square-mask": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"

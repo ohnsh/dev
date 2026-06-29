@@ -1,3 +1,5 @@
+#!/usr/bin/env deno
+
 const dreg = /(?<!\d)(?<year>\d{4})[-_]?(?<month>\d{2})[-_]?(?<day>\d{2})([-_T ]?(?<hour>\d{2})[-_]?(?<minute>\d{2})[-_]?(?<second>[0-5][0-9])?)?/
 
 const match = dreg.exec(Deno.args[0])?.filter(i => (i !== undefined))
