@@ -43,8 +43,8 @@
         "typescript": "^5",
       },
     },
-    "_/yt-uploader": {
-      "name": "yt-uploader",
+    "_/youtube-client": {
+      "name": "youtube-client",
       "dependencies": {
         "@googleapis/youtube": "^33.0.0",
       },
@@ -292,7 +292,7 @@
 
     "wrap-ansi-cjs": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
 
-    "yt-uploader": ["yt-uploader@workspace:_/yt-uploader"],
+    "youtube-client": ["youtube-client@workspace:_/youtube-client"],
 
     "string-width-cjs/emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 

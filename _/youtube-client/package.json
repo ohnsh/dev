@@ -1,5 +1,5 @@
 {
-  "name": "yt-uploader",
+  "name": "youtube-client",
   "private": true,
   "type": "module",
   "module": "index.ts",

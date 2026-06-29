@@ -1,4 +1,42 @@
-export async function runDeviceFlow(client_id: string, client_secret: string) {
+import google from '@googleapis/youtube'
+import type { ClientConfig } from './credentials'
+
+// const auth = new google.auth.GoogleAuth({ apiKey: process.env.YT_API_KEY });
+// const authClient = await auth.getClient()
+
+interface Credentials {
+  access_token: string
+  refresh_token: string
+}
+
+export default async function (
+  { client_id, client_secret }: ClientConfig,
+  scope: string,
+) {
+  const { access_token, refresh_token } = await runDeviceFlow(
+    client_id,
+    client_secret,
+  )
+
+  const oauthClient = new google.auth.OAuth2({
+    client_id,
+    client_secret,
+  })
+
+  oauthClient.setCredentials({
+    access_token,
+    refresh_token,
+    scope,
+    token_type: 'Bearer',
+  })
+
+  return oauthClient
+}
+
+async function runDeviceFlow(
+  client_id: string,
+  client_secret: string,
+): Promise<Credentials> {
   const SCOPES = 'https://www.googleapis.com/auth/youtube.upload'
 
   // STEP 1 & 2: Request device and user codes from Google
@@ -11,7 +49,6 @@ export async function runDeviceFlow(client_id: string, client_secret: string) {
   })
 
   const json = await response.json()
-  console.log(json)
   const { device_code, user_code, verification_url, interval, expires_in } =
     json
 
@@ -37,9 +74,11 @@ export async function runDeviceFlow(client_id: string, client_secret: string) {
         }),
       })
 
-      const tokenData = await tokenResponse.json()
+      const tokenData = (await tokenResponse.json()) as
+        | Credentials
+        | { error: string }
 
-      if (tokenData.error) {
+      if ('error' in tokenData) {
         if (tokenData.error === 'authorization_pending') {
           // User hasn't typed the code in yet, keep waiting
           return
@@ -50,10 +89,10 @@ export async function runDeviceFlow(client_id: string, client_secret: string) {
           console.error(`\nAuthentication failed: ${tokenData.error}`)
           clearInterval(pollTimer)
           reject(tokenData)
+          return
         }
       }
 
-      // Success! We received the tokens
       clearInterval(pollTimer)
       resolve(tokenData)
     }, pollIntervalMs)
