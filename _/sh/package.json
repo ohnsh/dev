@@ -4,6 +4,10 @@
   "private": true,
   "bin": {
     "dxif.sh": "./src/dxif.sh",
-    "sync_helper.sh": "./src/sync_helper.sh"
+    "sync_helper.sh": "./src/sync_helper.sh",
+    "rclone.sh": "./src/rclone.sh",
+    "wyze_timelapse.sh": "./src/wyze_timelapse.sh",
+    "memo_rename.sh": "./src/memo_rename.sh",
+    "logstamp.sh": "./src/logstamp.sh"
   }
 }

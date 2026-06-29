@@ -3,7 +3,6 @@
   "private": true,
   "dependencies": {
     "square-mask": "workspace:*",
-    "dxif": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest"
