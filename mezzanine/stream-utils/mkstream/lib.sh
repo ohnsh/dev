@@ -14,13 +14,31 @@ _ffmpeg_copy() {
 }
 
 _ffmpeg() {
-  ffmpeg -hide_banner -v warning "$@"
+  _ffmpeg_redact_tty "$@"
+  # ffmpeg -hide_banner -v warning "$@"
+}
+
+_ffmpeg_recover_errors() {
+  # -map is necessary, streams cannot be auto-selected.
+  ffmpeg -f fifo -fifo_format flv \
+    -attempt_recovery 1 -max_recovery_attempts 20 \
+    -recovery_wait_time 5 -map 0:v -map 0:a
 }
 
 # filter stream key from ffmpeg output
 _ffmpeg_redact() {
   ffmpeg -hide_banner "$@" 2>&1 |
-    sed 's/youtube\.com\/live2\/.*/youtube.com\/live2\/[redacted]/g'
+    sed -u 's/youtube\.com\/live2\/.*/youtube.com\/live2\/[redacted]/g'
+
+  FFMPEG_STATUS=${PIPESTATUS[0]}
+  return "$FFMPEG_STATUS"
+}
+
+# same but retain tty formatting from ffmpeg's stderr
+_ffmpeg_redact_tty() {
+  local pfx="youtube\.com\/live2\/"
+  script -q -F /dev/null ffmpeg -hide_banner "$@" |
+    sed -u "s/${pfx}.*/${pfx}[redacted]/g"
 
   FFMPEG_STATUS=${PIPESTATUS[0]}
   return "$FFMPEG_STATUS"

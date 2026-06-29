@@ -68,6 +68,7 @@ stream_folder() {
       continue
     fi
 
+    echo "Now streaming: $file" >&2
     if _ffmpeg_copy "$file"; then
       mv "$file" "$FINISHED_DIR"
     else
