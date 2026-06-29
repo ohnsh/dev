@@ -1,0 +1,9 @@
+{
+  "name": "sh",
+  "description": "shell utilities for organizing media files",
+  "private": true,
+  "bin": {
+    "dxif.sh": "./src/dxif.sh",
+    "sync_helper.sh": "./src/sync_helper.sh"
+  }
+}
