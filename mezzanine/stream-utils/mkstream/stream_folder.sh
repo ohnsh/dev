@@ -4,12 +4,10 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 . "$SCRIPT_DIR/.env"
 . "$SCRIPT_DIR/lib.sh"
 
-stream_folder() {
+fill_queue() {
   local DIR=${1%/}
-  local QUEUE_DIR=$DIR/_queue FINISHED_DIR=$DIR/_finished
+  local QUEUE_DIR=${2:-$DIR/_queue}
   local MAX_QUEUE_SIZE=12
-
-  mkdir -p "$QUEUE_DIR" "$FINISHED_DIR"
 
   shopt -s nullglob
   local files=("$DIR"/*.mp4) queue_files=("$QUEUE_DIR"/*.mp4)
@@ -41,10 +39,32 @@ stream_folder() {
 
     mv -n "$file" "$QUEUE_DIR"
   done
+}
+
+stream_folder() {
+  local NOFILL
+  if [[ $1 == '-n' ]]; then
+    NOFILL=1
+    shift
+  fi
+
+  local DIR=${1%/}
+  if [[ ! -d $DIR ]]; then
+    echo "Please supply a valid directory." >&2
+    exit 1
+  fi
+
+  local QUEUE_DIR=$DIR/_queue FINISHED_DIR=$DIR/_finished
+
+  mkdir -p "$QUEUE_DIR" "$FINISHED_DIR"
+
+  if [ -z $NOFILL ]; then
+    fill_queue "$DIR" "$QUEUE_DIR"
+  fi
 
   for file in "$QUEUE_DIR"/*.mp4; do
     if [ ! -e "$file" ]; then
-      echo "Skipping non-existant file $file." >&2
+      echo "Skipping non-existent file $file." >&2
       continue
     fi
 

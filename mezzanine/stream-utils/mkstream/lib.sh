@@ -13,9 +13,13 @@ _ffmpeg_copy() {
   $ffmpeg $RATE_OPTS -i "$1" -c:v copy -c:a copy -f flv "$YT_URL"
 }
 
-# filter stream key from ffmpeg output
 _ffmpeg() {
-  ffmpeg -hide_banner "$@" >&2 |
+  ffmpeg -hide_banner -v warning "$@"
+}
+
+# filter stream key from ffmpeg output
+_ffmpeg_redact() {
+  ffmpeg -hide_banner "$@" 2>&1 |
     sed 's/youtube\.com\/live2\/.*/youtube.com\/live2\/[redacted]/g'
 
   FFMPEG_STATUS=${PIPESTATUS[0]}
