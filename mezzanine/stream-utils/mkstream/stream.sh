@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-. .env
-. lib.sh
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+. "$SCRIPT_DIR/.env"
+. "$SCRIPT_DIR/lib.sh"
 
 stream_mmtx() {
     YT_URL=rtmp://localhost/yt-fwd stream_args "$@"

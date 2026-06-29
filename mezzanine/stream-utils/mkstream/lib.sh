@@ -1,9 +1,5 @@
 YT_URL=${YT_URL:-rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY}
-ffmpeg="ffmpeg -hide_banner"
-
-_ffmpeg() {
-  $ffmpeg $RATE_OPTS -i "$1" $CV_OPTS $CA_OPTS -f flv "$YT_URL"
-}
+ffmpeg=_ffmpeg
 
 _ffmpeg_reencode() {
   $ffmpeg $RATE_OPTS -i "$1" $LIBX264_OPTS $CV_OPTS -c:a copy -f flv "$YT_URL"
@@ -15,6 +11,15 @@ _ffmpeg_hw_reencode() {
 
 _ffmpeg_copy() {
   $ffmpeg $RATE_OPTS -i "$1" -c:v copy -c:a copy -f flv "$YT_URL"
+}
+
+# filter stream key from ffmpeg output
+_ffmpeg() {
+  ffmpeg -hide_banner "$@" >&2 |
+    sed 's/youtube\.com\/live2\/.*/youtube.com\/live2\/[redacted]/g'
+
+  FFMPEG_STATUS=${PIPESTATUS[0]}
+  return "$FFMPEG_STATUS"
 }
 
 # realtime to emulate stream instead of upload
@@ -56,29 +61,4 @@ stream_args() {
     $ffmpeg $RATE_OPTS -i "$mp4" -c copy -f mpegts - 2>/dev/null
   done |
     $ffmpeg -f mpegts -i - -c copy -f flv "$YT_URL"
-}
-
-stream_folder() {
-  files=("$QUEUE_DIR"/*.mp4)
-
-  while true; do
-    # If the folder is empty, wait 5 seconds and check again
-    if [ ! -e "${files[0]}" ]; then
-      echo "Queue empty. Waiting for videos..."
-      sleep 5
-      continue
-    fi
-  done
-}
-
-_fswatch() {
-  fswatch -0 "$WATCH_DIR" | while read -d "" file; do
-    # This block triggers instantly only when an .mp4 file changes/closes
-    if [ -f "$file" ] && ! lsof "$file" >/dev/null 2>&1; then
-      sleep 1
-      # Insert your sleep and mv logic here
-    fi
-  done
-
-  # fswatch --event Updated $DIR | while read file
 }
