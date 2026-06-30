@@ -4,8 +4,6 @@ import google from '@googleapis/youtube'
 import Bun from 'bun'
 import { default as clientConfig, type ClientConfig } from './client-config'
 
-// const auth = new google.auth.GoogleAuth({ apiKey: process.env.YT_API_KEY });
-
 interface Credentials {
   access_token: string
   refresh_token: string
@@ -20,6 +18,23 @@ const resolvedConfig = await clientConfig
 const oauthClient = new google.auth.OAuth2({
   ...resolvedConfig,
   redirectUri: REDIRECT_URI,
+})
+// new google.auth.GoogleAuth({ apiKey: process.env.YT_API_KEY });
+
+oauthClient.on('tokens', async (credentials) => {
+  console.log('New tokens.')
+
+  let storedCredentials: Record<string, unknown>
+  try {
+    storedCredentials = await Bun.file(CREDENTIALS_FILE).json()
+  } catch {
+    storedCredentials = {}
+  }
+
+  await Bun.write(
+    CREDENTIALS_FILE,
+    JSON.stringify({ ...storedCredentials, ...credentials }),
+  )
 })
 
 export default async function () {
