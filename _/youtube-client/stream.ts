@@ -1,10 +1,14 @@
 import google from '@googleapis/youtube'
 import auth from './auth'
-import clientConfig from './client-config'
 
-const oauthClient = await auth(await clientConfig)
+const oauthClient = await auth()
 const youtube = google.youtube({ version: 'v3', auth: oauthClient })
 
-const streams = await youtube.liveStreams.list({ part: ['snippet', 'status'] })
+const streams = await youtube.liveStreams.list({
+  part: ['snippet', 'status'],
+  mine: true,
+})
 
-console.log(streams)
+// const json = await streams.json()
+// const json = await streams.body?.json()
+console.log(streams.data)

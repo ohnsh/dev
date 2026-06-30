@@ -1,3 +1,4 @@
 .env
 .env.*
 .client-secret*.json
+.credentials.json

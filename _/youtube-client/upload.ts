@@ -2,13 +2,12 @@ import { createReadStream } from 'node:fs'
 // import readline from 'node:readline/promises'
 import google from '@googleapis/youtube'
 import auth from './auth'
-import clientConfig from './client-config'
 
-const oauthClient = await auth(await clientConfig)
+const oauthClient = await auth()
 
 const youtube = google.youtube({ version: 'v3', auth: oauthClient })
 const vid =
-  '/Volumes/Media/days/2026-06/25/_capture_2x2/2026-06-25_15-01-00.mp4'
+  '/Volumes/Media/days/2026-06/25/_capture_2x2/2026-06-25_15-52-06.mp4'
 const body = createReadStream(vid)
 
 await youtube.videos.insert({
