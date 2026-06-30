@@ -1,10 +1,12 @@
+#!/usr/bin/env bash
+
 SRC=/Volumes/Media
 DST=${SYNC_VOL:-/Volumes/Backup}
 DST=${DST%/}
 
 FC_BCK="$HOME/Movies/Final Cut Backups.localized"
 
-RCLONE=_rclone.sh
+RCLONE=rclone.sh
 
 RN="--track-renames"
 

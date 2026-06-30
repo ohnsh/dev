@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 OPTS="--progress -l --exclude .DS_Store"
 HDD_OPTS="--transfers=1 --multi-thread-streams=0 --local-no-sparse --size-only"
 
