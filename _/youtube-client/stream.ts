@@ -31,6 +31,8 @@ if (!broadcastResp.ok || !broadcastResp.data.items) {
   throw broadcastResp
 }
 
+const [latestBroadcast] = broadcastResp.data.items
+
 for (const item of broadcastResp.data.items.slice(0, 2)) {
   console.log({
     id: item.id,
