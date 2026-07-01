@@ -1,94 +1,126 @@
-import { youtube_v3 } from '@googleapis/youtube'
+import type { youtube_v3 } from '@googleapis/youtube'
 
 export default function (youtube: youtube_v3.Youtube) {
   return {
-    async getDefaultStream() {
-      const streamsResp = await youtube.liveStreams.list({
-        part: ['id', 'snippet', 'status', 'cdn'],
-        mine: true,
-      })
+    getDefaultStream,
+    transitionReadyLive,
+    getRecentBroadcasts,
+    getReadyBroadcast,
+    createNewBroadcast,
+  }
 
-      if (!streamsResp.ok || !streamsResp.data.items) {
-        throw streamsResp
-      }
+  async function getDefaultStream() {
+    const streamsResp = await youtube.liveStreams.list({
+      part: ['id', 'snippet', 'status', 'cdn'],
+      mine: true,
+    })
 
-      const defaultStream = streamsResp.data.items.find(
-        (item) => item.snippet?.title === 'Default',
-      )
+    if (!streamsResp.ok || !streamsResp.data.items) {
+      throw streamsResp
+    }
 
-      if (!defaultStream?.id) {
-        throw new Error('Default stream not found.')
-      }
+    const defaultStream = streamsResp.data.items.find(
+      (item) => item.snippet?.title === 'Default',
+    )
 
-      if (defaultStream.status?.streamStatus === 'active') {
-        throw new Error('Default stream key is already in use.')
-      }
+    if (!defaultStream?.id) {
+      throw new Error('Default stream not found.')
+    }
 
-      return defaultStream as typeof defaultStream & { id: string }
-    },
+    return defaultStream as typeof defaultStream & { id: string }
+  }
 
-    async getReadyBroadcast() {
-      const broadcastResp = await youtube.liveBroadcasts.list({
-        part: ['id', 'snippet', 'contentDetails', 'status'],
-        mine: true,
-      })
+  async function transitionReadyLive() {
+    const broadcastResp = await youtube.liveBroadcasts.list({
+      part: ['id', 'snippet', 'contentDetails', 'status'],
+      mine: true,
+    })
 
-      if (!broadcastResp.ok || !broadcastResp.data.items) {
-        throw broadcastResp
-      }
+    if (!broadcastResp.ok || !broadcastResp.data.items) {
+      throw broadcastResp
+    }
 
-      let [latestBroadcast] = broadcastResp.data.items
+    const readyBroadcast = broadcastResp.data.items.find(
+      (item) => item.status?.lifeCycleStatus === 'ready',
+    )
 
-      if (
-        !latestBroadcast ||
-        latestBroadcast.status?.lifeCycleStatus !== 'ready'
-      ) {
-        return undefined
-      }
+    if (!readyBroadcast?.id) {
+      throw new Error('No broadcasts in `ready` state.')
+    }
 
-      return latestBroadcast
-    },
+    // need to transition from ready to live
+    const txResp = await youtube.liveBroadcasts.transition({
+      id: readyBroadcast.id,
+      part: ['snippet', 'status'],
+      broadcastStatus: 'live',
+    })
 
-    async createNewBroadcast(streamId: string) {
-      // need to create a new broadcast
-      const resp = await youtube.liveBroadcasts.insert({
-        part: ['snippet', 'status'],
-        requestBody: {
-          snippet: {
-            title: '🔴 Live 6/30',
-            scheduledStartTime: new Date().toISOString(),
-          },
-          status: {
-            privacyStatus: 'public',
-            selfDeclaredMadeForKids: false,
-          },
+    if (!txResp.ok) {
+      throw txResp
+    }
+
+    return txResp.data
+  }
+
+  async function getRecentBroadcasts() {
+    const broadcastResp = await youtube.liveBroadcasts.list({
+      part: ['id', 'snippet', 'contentDetails', 'status'],
+      mine: true,
+    })
+
+    if (!broadcastResp.ok || !broadcastResp.data.items) {
+      throw broadcastResp
+    }
+
+    return broadcastResp.data.items
+  }
+
+  async function getReadyBroadcast() {
+    const recentBroadcasts = await getRecentBroadcasts()
+    const readyBroadcast = recentBroadcasts.find(
+      (item) => item.status?.lifeCycleStatus === 'ready',
+    )
+
+    return readyBroadcast
+  }
+
+  async function createNewBroadcast(streamId: string) {
+    const now = new Date()
+    const title = `🔴 Live ${now.getMonth() + 1}/${now.getDate()}`
+
+    const resp = await youtube.liveBroadcasts.insert({
+      part: ['snippet', 'status', 'contentDetails'],
+      requestBody: {
+        snippet: {
+          title,
+          scheduledStartTime: new Date().toISOString(),
         },
-      })
+        status: {
+          privacyStatus: 'public',
+          selfDeclaredMadeForKids: false,
+        },
+        contentDetails: {
+          enableAutoStart: true,
+          enableAutoStop: true,
+        },
+      },
+    })
 
-      if (!resp.ok || !resp.data.id) {
-        throw resp
-      }
+    if (!resp.ok || !resp.data.id) {
+      throw resp
+    }
 
-      const bindResp = await youtube.liveBroadcasts.bind({
-        part: ['snippet', 'status'],
-        id: resp.data.id,
-        streamId,
-      })
+    const bindResp = await youtube.liveBroadcasts.bind({
+      part: ['snippet', 'status'],
+      id: resp.data.id,
+      streamId,
+    })
 
-      if (!bindResp.ok) {
-        throw bindResp
-      }
+    if (!bindResp.ok) {
+      throw bindResp
+    }
 
-      /*
-  // need to transition from ready to live
-  await youtube.liveBroadcasts.transition({
-    part: ['snippet', 'status'],
-    broadcastStatus: 'ready',  // 'live'
-  })
-  */
-
-      return resp.data
-    },
+    return resp.data
   }
 }
 

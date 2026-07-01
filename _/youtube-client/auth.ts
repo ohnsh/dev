@@ -4,10 +4,10 @@ import google from '@googleapis/youtube'
 import Bun from 'bun'
 import { default as clientConfig, type ClientConfig } from './client-config'
 
-interface Credentials {
-  access_token: string
-  refresh_token: string
-}
+// interface Credentials {
+//   access_token: string
+//   refresh_token: string
+// }
 
 const CREDENTIALS_FILE = join(import.meta.dir, '.credentials.json')
 const CB_PORT = 3000
@@ -19,6 +19,9 @@ const oauthClient = new google.auth.OAuth2({
   ...resolvedConfig,
   redirectUri: REDIRECT_URI,
 })
+
+type Credentials = Parameters<(typeof oauthClient)['setCredentials']>[0]
+
 // new google.auth.GoogleAuth({ apiKey: process.env.YT_API_KEY });
 
 oauthClient.on('tokens', async (credentials) => {
