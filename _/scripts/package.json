@@ -3,6 +3,7 @@
   "description": "A package to collect binaries by depending on packages that publish them.",
   "private": true,
   "dependencies": {
-    "square-mask": "workspace:*"
+    "square-mask": "workspace:*",
+    "stream-utils": "workspace:*"
   }
 }

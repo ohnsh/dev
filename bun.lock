@@ -9,6 +9,7 @@
       "name": "scripts",
       "dependencies": {
         "square-mask": "workspace:*",
+        "stream-utils": "workspace:*",
       },
     },
     "_/square-mask": {
@@ -26,8 +27,20 @@
         "typescript": "^5",
       },
     },
+    "_/stream-utils": {
+      "name": "stream-utils",
+      "bin": {
+        "stream_folder": "./mkstream/stream_folder.sh",
+      },
+      "dependencies": {
+        "youtube-client": "workspace:*",
+      },
+    },
     "_/youtube-client": {
       "name": "youtube-client",
+      "bin": {
+        "youtube-client": "./index.ts",
+      },
       "dependencies": {
         "@googleapis/youtube": "^33.0.0",
       },
@@ -248,6 +261,8 @@
     "signal-exit": ["signal-exit@4.1.0", "", {}, "sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw=="],
 
     "square-mask": ["square-mask@workspace:_/square-mask"],
+
+    "stream-utils": ["stream-utils@workspace:_/stream-utils"],
 
     "string-width": ["string-width@5.1.2", "", { "dependencies": { "eastasianwidth": "^0.2.0", "emoji-regex": "^9.2.2", "strip-ansi": "^7.0.1" } }, "sha512-HnLOCR3vjcY8beoNLtcjZ5/nxn2afmME6lhrDrebokqMap+XbeW8n9TXpPDOqdGK5qcI3oT0GKTW6wC7EMiVqA=="],
 
