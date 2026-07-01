@@ -93,6 +93,18 @@ async function main() {
       break
     case 'broadcast':
       switch (op) {
+        case 'ensure': {
+          let readyBroadcast = await getReadyBroadcast()
+          if (readyBroadcast) {
+            console.log('Existing ready broadcast:')
+          } else {
+            const defaultStream = await getDefaultStream()
+            readyBroadcast = await createBroadcast(defaultStream.id)
+            console.log('Created new broadcast:')
+          }
+          console.log(distillBroadcast(readyBroadcast))
+          break
+        }
         case 'golive': {
           const txData = await goLive()
           console.log(txData)

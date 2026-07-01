@@ -78,7 +78,9 @@ export default function (youtube: youtube_v3.Youtube) {
   async function getReadyBroadcast() {
     const recentBroadcasts = await getRecentBroadcasts()
     const readyBroadcast = recentBroadcasts.find(
-      (item) => item.status?.lifeCycleStatus === 'ready',
+      (item) =>
+        item.status?.lifeCycleStatus === 'ready' &&
+        item.contentDetails?.enableAutoStart,
     )
 
     return readyBroadcast
