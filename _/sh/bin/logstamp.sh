@@ -1,22 +1,24 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-_freetsa=$(dirname "$(which $0 || echo $0)")/_freetsa.sh
-[ -e "$_freetsa" ] || {
-  echo "ERROR: can't find _freetsa.sh" >&2
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+freetsa=${script_dir%/*}/lib/freetsa.sh
+
+[[ -e $freetsa ]] || {
+  echo "ERROR: can't find freetsa.sh" >&2
   exit 1
 }
-. "$_freetsa"
+. "$freetsa"
 
 _stamp() {
   local target=$1
-  if [ -e "$target.tsq" -o -e "$target.tsr" ]; then
+  if [[ -e $target.tsq || -e $target.tsr ]]; then
     echo "Skipping FreeTSA: $target.ts[qr] already exists."
   else
-    _freetsa_stamp  "$target"
-    _freetsa_verify "$target"
+    freetsa_stamp  "$target"
+    freetsa_verify "$target"
   fi
 
-  if [ -e "$target.ots" ]; then
+  if [[ -e $target.ots ]]; then
     echo "Skipping OTS: $target.ots already exists."
   else
     ots stamp "$target"
@@ -38,7 +40,7 @@ rm_first_col() {
 gen_manifest() {
   local _dir=$1 _wdir=${LOGSTAMP_WDIR:-$1/../../..}
   local dir=$(realpath "$_dir") wdir=$(realpath "$_wdir")
-  local path=${dir#$wdir/} default_mdir=${dir%/*}/_manifest
+  local path=${dir#"$wdir/"} default_mdir=${dir%/*}/_manifest
   local base_mname=manifest_${path//\//_}
 
   MDIR=${LOGSTAMP_MDIR:-$default_mdir}
@@ -46,10 +48,10 @@ gen_manifest() {
   MNAME=$base_mname.txt
 
 
-  if [ -e "$MDIR/$MNAME" ]; then
+  if [[ -e $MDIR/$MNAME ]]; then
     local _tmp=$(mktemp -u) seq=1
     mkfifo "$_tmp"
-    if [ "$LOGSTAMP_CHECK" != 1 ]; then
+    if [[ $LOGSTAMP_CHECK != 1 ]]; then
       cat "$MDIR/$base_mname"*.txt | rm_first_col | sort > "$_tmp" &
       manifest=$( cd "$wdir" && \
         _manifest_files "$path" | comm -23 - "$_tmp" | xargs -I % sha256sum %
@@ -60,19 +62,19 @@ gen_manifest() {
         _manifest_files "$path" | xargs -I % sha256sum % | sort | comm -23 - "$_tmp"
       )
     fi
-    [ -n "$_tmp" ] && rm -f "$_tmp"
+    [[ -n $_tmp ]] && rm -f "$_tmp"
   else
     manifest=$( cd "$wdir" && \
       _manifest_files "$path" | xargs -I % sha256sum %
     )
   fi
 
-  while [ -e "$MDIR/$MNAME" ]; do
+  while [[ -e $MDIR/$MNAME ]]; do
     MNAME=${base_mname}_$seq.txt
-    seq=$(expr $seq + 1)
+    seq=$((seq + 1))
   done
 
-  if [ -n "$manifest" ]; then
+  if [[ -n $manifest ]]; then
     echo "$manifest" | sort -k2 > "$MDIR/$MNAME"
   else
     echo "Nothing new for manifest; none written."
@@ -99,7 +101,7 @@ gen_manifest() {
 
 case "$1" in
   manifest|stamp)
-    mode="$1"
+    mode=$1
     shift
     ;;
   *)
@@ -107,7 +109,7 @@ case "$1" in
     ;;
 esac
 
-while [ $# -gt 1 ]; do
+while [[ $# -gt 1 ]]; do
   case "$1" in
     -w) LOGSTAMP_WDIR=$2
         shift 2 ;;
@@ -124,7 +126,7 @@ for target; do
       continue
       ;;
   esac
-  
+
   case "$mode" in
     manifest)
       gen_manifest "$target"

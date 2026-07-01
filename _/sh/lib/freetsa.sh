@@ -1,6 +1,6 @@
 FREETSA_CERT=/Volumes/Media/lib/timestamp/cacert.pem
 
-_freetsa_stamp() {
+freetsa_stamp() {
   local file=$1
   openssl ts -query -data "$file" \
     -no_nonce -sha512 -cert -out "$file.tsq" && \
@@ -9,7 +9,7 @@ _freetsa_stamp() {
     "https://freetsa.org/tsr" > "$file.tsr"
 }
 
-_freetsa_verify() {
+freetsa_verify() {
   local file=$1
   openssl ts -verify \
     -in "$file.tsr" -queryfile "$file.tsq" \
