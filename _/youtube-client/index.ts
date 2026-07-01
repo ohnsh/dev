@@ -1,7 +1,9 @@
+#!/usr/bin/env bun
+
 import google, { type youtube_v3 } from '@googleapis/youtube'
 import auth from './auth'
-// import uploadOps from './upload'
 import liveOps from './live'
+import videoOps from './video'
 
 const oauthClient = await auth()
 const youtube = google.youtube({ version: 'v3', auth: oauthClient })
@@ -11,10 +13,11 @@ const {
   getDefaultStream,
   getReadyBroadcast,
   getRecentBroadcasts,
-  createNewBroadcast,
-  transitionReadyLive,
+  createBroadcast,
+  goLive,
 } = liveOps(youtube)
-// const { uploadVideo } = uploadOps(youtube)
+
+const video = videoOps(youtube)
 
 function distillBroadcast(apiBroadcast: youtube_v3.Schema$LiveBroadcast) {
   const { id, status, snippet, contentDetails } = apiBroadcast
@@ -65,11 +68,33 @@ async function main() {
 
   switch (type) {
     case 'video':
+      switch (op) {
+        case 'upload': {
+          const [path, json] = args
+          if (!path || !json) {
+            throw new Error(
+              'Must supply path to file and json for snippet ({ "title": "Title here" })',
+            )
+          }
+
+          const snippet = JSON.parse(json)
+          const exists = await Bun.file(path).exists()
+          if (!exists || !snippet.title) {
+            throw new Error('Lazy error.')
+          }
+
+          video.upload(path, snippet)
+          break
+        }
+        default: {
+          throw new Error(`Operation video ${op} not implemented.`)
+        }
+      }
       break
     case 'broadcast':
       switch (op) {
         case 'golive': {
-          const txData = await transitionReadyLive()
+          const txData = await goLive()
           console.log(txData)
           break
         }
@@ -80,7 +105,7 @@ async function main() {
         }
         case 'new': {
           const defaultStream = await getDefaultStream()
-          const newBroadcast = await createNewBroadcast(defaultStream.id)
+          const newBroadcast = await createBroadcast(defaultStream.id)
           console.log(distillBroadcast(newBroadcast))
           break
         }
@@ -109,7 +134,7 @@ async function main() {
         console.log('Found existing ready broadcast.')
       } else {
         console.log('Creating new broadcast.')
-        readyBroadcast = await createNewBroadcast(defaultStream.id)
+        readyBroadcast = await createBroadcast(defaultStream.id)
       }
 
       console.log(readyBroadcast)

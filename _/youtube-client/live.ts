@@ -3,10 +3,10 @@ import type { youtube_v3 } from '@googleapis/youtube'
 export default function (youtube: youtube_v3.Youtube) {
   return {
     getDefaultStream,
-    transitionReadyLive,
+    goLive,
     getRecentBroadcasts,
     getReadyBroadcast,
-    createNewBroadcast,
+    createBroadcast,
   }
 
   async function getDefaultStream() {
@@ -30,7 +30,7 @@ export default function (youtube: youtube_v3.Youtube) {
     return defaultStream as typeof defaultStream & { id: string }
   }
 
-  async function transitionReadyLive() {
+  async function goLive() {
     const broadcastResp = await youtube.liveBroadcasts.list({
       part: ['id', 'snippet', 'contentDetails', 'status'],
       mine: true,
@@ -84,7 +84,7 @@ export default function (youtube: youtube_v3.Youtube) {
     return readyBroadcast
   }
 
-  async function createNewBroadcast(streamId: string) {
+  async function createBroadcast(streamId: string) {
     const now = new Date()
     const title = `🔴 Live ${now.getMonth() + 1}/${now.getDate()}`
 

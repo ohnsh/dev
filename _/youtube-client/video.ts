@@ -3,22 +3,22 @@ import type { youtube_v3 } from '@googleapis/youtube'
 
 export default function (youtube: youtube_v3.Youtube) {
   return {
-    uploadVideo,
+    upload,
   }
 
-  async function uploadVideo(path: string) {
+  async function upload(
+    path: string,
+    snippet: youtube_v3.Schema$VideoSnippet,
+    isPublic = true,
+  ) {
     const body = createReadStream(path)
 
     await youtube.videos.insert({
       part: ['snippet', 'status'],
       requestBody: {
-        snippet: {
-          title: 'Test vid: Device flow.',
-          description: 'Uploaded via script.',
-          tags: ['api', 'automation'],
-        },
+        snippet,
         status: {
-          privacyStatus: 'public',
+          privacyStatus: isPublic ? 'public' : 'private',
         },
       },
       media: {
