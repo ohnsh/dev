@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# works great for creating the type of timelapse videos I was making
+# in Final Cut a few months ago.
 ffmpeg -i "$1" -filter_complex "
 [0:v]setpts=PTS/8,split=4[tl_raw][tr_raw][bl_raw][br_raw];
 

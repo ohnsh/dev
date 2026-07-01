@@ -87,12 +87,13 @@ stream_folder() {
 }
 
 _fswatch() {
-  fswatch -0 "$WATCH_DIR" | while read -d "" file; do
-    # This block triggers instantly only when an .mp4 file changes/closes
+  # skeleton for possible "watch mode" that detects when videos are dropped into a folder
+  # in limited testing this even fires when OBS splits a recording / closes an mp4 file.
+  fswatch -0 "$WATCH_DIR" | while read -r -d "" file; do
     if [ -f "$file" ] && ! lsof "$file" >/dev/null 2>&1; then
-      sleep 1
-      # Insert your sleep and mv logic here
+      :
     fi
+    sleep 1
   done
 
   # fswatch --event Updated $DIR | while read file
