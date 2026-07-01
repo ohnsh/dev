@@ -1,13 +1,8 @@
 {
   "name": "scripts",
+  "description": "A package to collect binaries by depending on packages that publish them.",
   "private": true,
   "dependencies": {
     "square-mask": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   }
 }
