@@ -16,7 +16,7 @@ const streamItem = {
   cdn: {
     ingestionType: 'rtmp',
     ingestionInfo: {
-      streamName: '1cp9-g8sb-qpgf-azpt-9wf3',
+      streamName: '1cp9-g8sb-qpgf-azpt-9wf3', // refreshed stream key, this one is invalid
       ingestionAddress: 'rtmp://a.rtmp.youtube.com/live2',
       backupIngestionAddress: 'rtmp://b.rtmp.youtube.com/live2?backup=1',
       rtmpsIngestionAddress: 'rtmps://a.rtmps.youtube.com/live2',
