@@ -34,6 +34,26 @@ strobe_hw() {
     -c:v hevc_videotoolbox -tag:v hvc1 -shortest "$@"
 }
 
+strobe_vaapi() {
+  x=8 # default 8x speedup
+  if [[ $1 == "-x" ]]; then
+    x=$2
+    shift 2
+  fi
+
+  in=$1
+  shift
+
+  ffmpeg \
+    -init_hw_device vaapi=gpu:/dev/dri/renderD128 \
+    -filter_hw_device gpu \
+    -i "$in" \
+    -filter_complex "$(_strobe_filter "$x"); [v]format=nv12,hwupload[v_hw]" \
+    -c:v h264_vaapi -qp 25 \
+    -map "[v_hw]" -map "[a]" -shortest \
+    "$@"
+}
+
 _strobe_filter() {
   local x=$1
 
@@ -51,12 +71,9 @@ EOF
 }
 
 _segment_parse() {
-  in=$1
-  shift
-
   len=300
   sel=5
-  optind=1
+  optind=0
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -81,13 +98,36 @@ _segment_parse() {
 }
 
 segment() {
-  local in len sel optind
+  local len sel optind
   _segment_parse "$@" || return 1
   shift "$optind"
+
+  local in=$1
+  shift
 
   ffmpeg -i "$in" \
     -vf "select='lt(mod(t,$len),$sel)',setpts=N/FRAME_RATE/TB" \
     -af "aselect='lt(mod(t,$len),$sel)',asetpts=N/SR/TB" \
+    "$@"
+}
+
+segment_vaapi() {
+  local len sel optind
+  _segment_parse "$@" || return 1
+  shift "$optind"
+
+  local in=$1
+  shift
+
+  ffmpeg \
+    -init_hw_device vaapi=gpu:/dev/dri/renderD128 \
+    -filter_hw_device gpu \
+    -hwaccel vaapi -hwaccel_device gpu -hwaccel_output_format vaapi \
+    -i "$in" \
+    -vf "select='lt(mod(t,$len),$sel)',setpts=N/FRAME_RATE/TB" \
+    -af "aselect='lt(mod(t,$len),$sel)',asetpts=N/SR/TB" \
+    -c:v hevc_vaapi -qp 25 -tag:v hvc1 \
+    -map 0:v -map 0:a:0 \
     "$@"
 }
 
@@ -99,9 +139,12 @@ get_duration() {
 }
 
 segment_stitch() {
-  local in len sel optind
+  local len sel optind
   _segment_parse "$@" || return 1
   shift "$optind"
+
+  local in=$1
+  shift
 
   local duration
   duration=$(get_duration "$in")
@@ -123,9 +166,12 @@ segment_stitch() {
 }
 
 segment_stitch_improved() {
-  local in len sel optind
+  local len sel optind
   _segment_parse "$@" || return 1
   shift "$optind"
+
+  local in=$1
+  shift
 
   local times
   local t=0

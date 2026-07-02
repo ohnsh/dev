@@ -77,6 +77,18 @@ ffmpeg_cmd = (
     f'-map "{current_v}" -map "{current_a}" -c:v libx264 -c:a aac {output_file}'
 )
 
+# Crashes NUC. Gemini suggests trying offloading decoding/encoding to the GPU even though
+# xfade filter has to run in software. May or may not be worth the trouble.
+# 
+# ffmpeg_vaapi_cmd = ()
+# ffmpeg -hwaccel vaapi -hwaccel_output_format vaapi -i input1.mp4 \
+#        -hwaccel vaapi -hwaccel_output_format vaapi -i input2.mp4 \
+#        -filter_complex "
+#          [0:v]hwdownload,format=nv12[v1]; \
+#          [1:v]hwdownload,format=nv12[v2]; \
+#          [v1][v2]xfade=transition=fade:duration=1:offset=5,format=nv12,hwupload[vout]" \
+#        -map "[vout]" -c:v h264_vaapi -b:v 15M output.mp4
+
 print("Generated FFmpeg Command:\n")
 print(ffmpeg_cmd)
 
