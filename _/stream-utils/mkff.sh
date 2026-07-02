@@ -1,87 +1,66 @@
 #!/usr/bin/env bash
 
-# works great for creating the type of timelapse videos I was making
-# in Final Cut a few months ago.
 strobe() {
-  x=8 # default 8x speedup
+  local x=8 # default 8x speedup
   if [[ $1 == "-x" ]]; then
     x=$2
     shift 2
   fi
 
-  in=$1
-  shift
-
-  ffmpeg -i "$in" \
-    -filter_complex "$(_strobe_filter "$x")" \
-    -map "[v]" -map "[a]" \
-    -c:v libx265 -preset fast -tag:v hvc1 -shortest "$@"
-}
-
-strobe_opt() {
   local in=$1
   shift
 
   ffmpeg -i "$in" \
-    -filter_complex "[0:v]setpts=PTS/10,fps=30[fast]; $(_strobe_filter_opt)" \
-    -map "[v]" \
+    -filter_complex "[0:v]setpts=PTS/$x,fps=30[fast]; $(_strobe_filter)" \
+    -map "[v]" -shortest \
     -c:v libx265 -preset fast -tag:v hvc1 \
-    -shortest "$@"
+    "$@"
 }
 
 strobe_hw() {
-  x=8 # default 8x speedup
+  local x=8 # default 8x speedup
   if [[ $1 == "-x" ]]; then
     x=$2
     shift 2
   fi
 
-  in=$1
+  local in=$1
   shift
 
   ffmpeg -i "$in" \
-    -filter_complex "$(_strobe_filter "$x")" \
-    -map "[v]" -map "[a]" \
-    -c:v hevc_videotoolbox -tag:v hvc1 -shortest "$@"
+    -filter_complex "[0:v]setpts=PTS/$x,fps=30[fast]; $(_strobe_filter)" \
+    -map "[v]" -shortest \
+    -c:v hevc_videotoolbox -tag:v hvc1 \
+    "$@"
 }
 
 strobe_vaapi() {
-  x=8 # default 8x speedup
+  local x=8 # default 8x speedup
   if [[ $1 == "-x" ]]; then
     x=$2
     shift 2
   fi
 
-  in=$1
+  local in=$1
   shift
 
   ffmpeg \
     -init_hw_device vaapi=gpu:/dev/dri/renderD128 \
     -filter_hw_device gpu \
     -i "$in" \
-    -filter_complex "$(_strobe_filter "$x"); [v]format=nv12,hwupload[v_hw]" \
+    -filter_complex "
+    [0:v]setpts=PTS/$x,fps=30[fast];
+    $(_strobe_filter);
+    [v]format=nv12,hwupload[v_hw]" \
+    -map "[v_hw]" -shortest \
     -c:v h264_vaapi -qp 25 \
-    -map "[v_hw]" -map "[a]" -shortest \
     "$@"
 }
 
-_strobe_filter() {
-  local x=$1
+# removing audio now, but it would look something like:
+# [0:a]atempo=$x.0[a]
 
-  cat <<EOF
-[0:v]setpts=PTS/$x,split=4[tl_raw][tr_raw][bl_raw][br_raw];
-
-[tl_raw]crop=1920:1080:0:0[tl];
-[tr_raw]crop=1920:1080:1920:0[tr];
-[bl_raw]crop=1920:1080:0:1080,fps=fps=2[bl];
-[br_raw]crop=1920:1080:1920:1080,fps=fps=2[br];
-
-[tl][tr][bl][br]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[v];
-[0:a]atempo=$x.0[a]
-EOF
-}
-
-_strobe_filter_opt() { cat; } <<EOF
+_strobe_filter() { cat; } <<EOF
 [fast]split=4[tl_raw][tr_raw][bl_raw][br_raw];
 
 [tl_raw]crop=1920:1080:0:0[tl];
@@ -92,7 +71,7 @@ _strobe_filter_opt() { cat; } <<EOF
 [tl][tr][bl][br]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[v];
 EOF
 
-_segment_parse() {
+_summary_parse() {
   len=300
   sel=5
   optind=0
@@ -119,9 +98,9 @@ _segment_parse() {
   fi
 }
 
-segment() {
+summary_select() {
   local len sel optind
-  _segment_parse "$@" || return 1
+  _summary_parse "$@" || return 1
   shift "$optind"
 
   local in=$1
@@ -133,9 +112,9 @@ segment() {
     "$@"
 }
 
-segment_vaapi() {
+summary_select_vaapi() {
   local len sel optind
-  _segment_parse "$@" || return 1
+  _summary_parse "$@" || return 1
   shift "$optind"
 
   local in=$1
@@ -153,23 +132,23 @@ segment_vaapi() {
     "$@"
 }
 
-get_duration() {
+_duration() {
   ffprobe -v error \
     -show_entries format=duration \
     -of default=noprint_wrappers=1:nokey=1 \
     "$1"
 }
 
-segment_stitch() {
+summary_inseek() {
   local len sel optind
-  _segment_parse "$@" || return 1
+  _summary_parse "$@" || return 1
   shift "$optind"
 
   local in=$1
   shift
 
   local duration
-  duration=$(get_duration "$in")
+  duration=$(_duration "$in")
   duration=${duration%%.*}
 
   local t_start=0 outfile
@@ -187,18 +166,16 @@ segment_stitch() {
   ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD"/out-segments/*) -c:v libx265 -c:a aac -tag:v hvc1 "$@"
 }
 
-segment_stitch_improved() {
+summary_segment() {
   local len sel optind
-  _segment_parse "$@" || return 1
+  _summary_parse "$@" || return 1
   shift "$optind"
 
   local in=$1
   shift
 
-  local times
-  local t=0
-  local duration
-  duration=$(get_duration "$in")
+  local times duration t=0
+  duration=$(_duration "$in")
   duration=${duration%%.*}
 
   while [[ $t -lt $duration ]]; do
@@ -209,14 +186,15 @@ segment_stitch_improved() {
   done
   times=${times#,0,}
 
-  rm -rf out-segments
-  mkdir -p out-segments
+  local dir=out_segments
+  rm -rf "$dir"
+  mkdir -p "$dir"
 
-  ffmpeg -i "$in" -f segment -segment_times "$times" -reset_timestamps 1 -c copy out-segments/%03d.mp4
+  ffmpeg -i "$in" -f segment -segment_times "$times" -reset_timestamps 1 -c copy "$dir/%03d.mp4"
 
-  rm out-segments/*{1,3,5,7,9}.*
+  rm "$dir"/*{1,3,5,7,9}.*
 
-  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD"/out-segments/*) -c copy "$@"
+  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD/$dir"/*) -c copy "$@"
 }
 
 # default crf: 23 (libx264), 28 (libx265)
@@ -224,3 +202,26 @@ segment_stitch_improved() {
 # slow, medium, fast, veryfast
 # optional audio stream (no error if absent):
 # `-map 0:a?`
+
+_mkff_main() {
+if [[ $(type -t "$1") == "function" ]]; then
+  cmd=$1 && shift
+  $cmd "$@"
+else
+  cat >&2 <<EOF
+
+subcommands:
+
+  strobe, strobe_hw, strobe_vaapi,
+
+  summary_select, summary_select_vaapi, summary_inseek, summary_segment
+
+EOF
+
+  exit 1
+fi
+}
+
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  _mkff_main "$@"
+fi
