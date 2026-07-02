@@ -18,6 +18,17 @@ strobe() {
     -c:v libx265 -preset fast -tag:v hvc1 -shortest "$@"
 }
 
+strobe_opt() {
+  local in=$1
+  shift
+
+  ffmpeg -i "$in" \
+    -filter_complex "[0:v]setpts=PTS/10,fps=30[fast]; $(_strobe_filter_opt)" \
+    -map "[v]" \
+    -c:v libx265 -preset fast -tag:v hvc1 \
+    -shortest "$@"
+}
+
 strobe_hw() {
   x=8 # default 8x speedup
   if [[ $1 == "-x" ]]; then
@@ -69,6 +80,17 @@ _strobe_filter() {
 [0:a]atempo=$x.0[a]
 EOF
 }
+
+_strobe_filter_opt() { cat; } <<EOF
+[fast]split=4[tl_raw][tr_raw][bl_raw][br_raw];
+
+[tl_raw]crop=1920:1080:0:0[tl];
+[tr_raw]crop=1920:1080:1920:0[tr];
+[bl_raw]crop=1920:1080:0:1080,fps=fps=2[bl];
+[br_raw]crop=1920:1080:1920:1080,fps=fps=2[br];
+
+[tl][tr][bl][br]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[v];
+EOF
 
 _segment_parse() {
   len=300
