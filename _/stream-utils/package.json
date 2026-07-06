@@ -1,6 +1,7 @@
 {
   "name": "stream-utils",
   "dependencies": {
+    "simple-ffmpegjs": "^0.6.1",
     "youtube-client": "workspace:*"
   },
   "bin": {
