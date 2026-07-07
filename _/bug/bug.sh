@@ -15,4 +15,7 @@ echo "Samson G-Track at index $index" >&2
 mkdir -p "$outdir"
 
 # -c:a libmp3lame -b:a 128k
-caffeinate -s ffmpeg -hide_banner -v info -f avfoundation -i ":$index" -f segment -segment_time 3600 -strftime 1 "$outdir/bug_%Y%m%d_%H%M%S.aac"
+caffeinate -s ffmpeg -hide_banner \
+  -f avfoundation -i ":$index" \
+  -ar 48000 -f segment -segment_time 3600 \
+  -strftime 1 "$outdir/bug_%Y%m%d_%H%M%S.aac"
