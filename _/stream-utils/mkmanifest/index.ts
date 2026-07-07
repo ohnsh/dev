@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 import * as fs from 'node:fs/promises'
 import { join } from 'node:path'
 import { Temporal } from 'temporal-polyfill'
@@ -45,6 +47,7 @@ async function getItemsFromOverlay(base: string) {
   return recurse(await fs.realpath(base))
 }
 
+// Works with overlay paths. Really just an exercise.
 async function getItemsFromGenerator(base: string) {
   const realBase = await fs.realpath(base)
 
@@ -120,7 +123,9 @@ function collateItems(items: string[], { annotate = true } = {}) {
     return working
   }, {})
 
-  Object.values(collated).forEach((list) => list.sort())
+  Object.values(collated).forEach((list) => {
+    list.sort()
+  })
   return collated
 }
 
@@ -148,7 +153,10 @@ async function parseArg(arg: string) {
 
   try {
     date = Temporal.PlainDate.from(arg)
-    path = `${OVERLAY_PREFIX}/${date.year}-${date.month}/${date.day}`
+    const [day, month] = [date.day, date.month].map((n) =>
+      n.toString().padStart(2, '0'),
+    )
+    path = `${OVERLAY_PREFIX}/${date.year}-${month}/${day}`
   } catch {
     path = await fs.realpath(arg)
     const { year, month, day } = matchPathDate(path)
@@ -160,7 +168,7 @@ async function parseArg(arg: string) {
 
 assertOneArg(process.argv)
 const [, , arg] = process.argv
-const { date, path } = await parseArg(arg)
+const { path } = await parseArg(arg)
 
 const items = path.includes(DAYS_PREFIX)
   ? await getItemsFromDays(path)
