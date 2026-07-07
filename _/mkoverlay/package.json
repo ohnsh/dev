@@ -1,5 +1,5 @@
 {
-  "name": "mkmanifest",
+  "name": "mkoverlay",
   "module": "index.ts",
   "type": "module",
   "private": true,
