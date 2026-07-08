@@ -88,6 +88,11 @@ _summary_parse() {
       shift 2
       ((optind += 2))
       ;;
+    -o | --output)
+      out=$2
+      shift 2
+      ((optind += 2))
+      ;;
     *) break ;;
     esac
   done
@@ -197,6 +202,43 @@ summary_segment() {
   ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD/$dir"/*) -c copy "$@"
 }
 
+_playlist() {
+  local -a abs_paths
+  readarray -t abs_paths < <(realpath -- "$@")
+  printf "file '%s'\n" "${abs_paths[@]}"
+}
+
+summary_segment_multi() {
+  local len sel optind out
+  _summary_parse "$@" || return 1
+  shift "$optind"
+
+  local times duration=0 increment t=0
+  for in_file; do
+    increment=$(_duration "$in_file")
+    increment=${increment%%.*}
+    duration=$((duration + increment))
+  done
+
+  while [[ $t -lt $duration ]]; do
+    times=$times,$t
+    [[ $((t + sel)) -lt $duration ]] || break
+    times=$times,$((t + sel))
+    ((t += len))
+  done
+  times=${times#,0,}
+
+  local dir=out_segments
+  rm -rf "$dir"
+  mkdir -p "$dir"
+
+  ffmpeg -f concat -safe 0 -i <(_playlist "$@") -f segment -segment_times "$times" -reset_timestamps 1 -c copy "$dir/%03d.mp4"
+
+  rm "$dir"/*{1,3,5,7,9}.*
+
+  ffmpeg -f concat -safe 0 -i <(_playlist "$dir"/*) -c copy "$out"
+}
+
 # default crf: 23 (libx264), 28 (libx265)
 # `-preset` trades off speed and file size, quality remains constant
 # slow, medium, fast, veryfast
@@ -204,11 +246,11 @@ summary_segment() {
 # `-map 0:a?`
 
 _mkff_main() {
-if [[ $(type -t "$1") == "function" ]]; then
-  cmd=$1 && shift
-  $cmd "$@"
-else
-  cat >&2 <<EOF
+  if [[ $(type -t "$1") == "function" ]]; then
+    cmd=$1 && shift
+    $cmd "$@"
+  else
+    cat >&2 <<EOF
 
 subcommands:
 
@@ -218,8 +260,8 @@ subcommands:
 
 EOF
 
-  exit 1
-fi
+    exit 1
+  fi
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
