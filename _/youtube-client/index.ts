@@ -13,11 +13,20 @@ const {
   getDefaultStream,
   getReadyBroadcast,
   getRecentBroadcasts,
+  getPrunable,
   createBroadcast,
   goLive,
 } = liveOps(youtube)
 
 const video = videoOps(youtube)
+
+async function prune() {
+  const prunable = await getPrunable()
+  const responses = await Promise.all(
+    prunable.map((item) => youtube.liveBroadcasts.delete({ id: item.id! })),
+  )
+  return responses.reduce((prev, cur) => prev + (cur.ok ? 1 : 0), 0)
+}
 
 function distillBroadcast(apiBroadcast: youtube_v3.Schema$LiveBroadcast) {
   const { id, status, snippet, contentDetails } = apiBroadcast
@@ -113,6 +122,16 @@ async function main() {
         case 'ready': {
           const readyBroadcast = await getReadyBroadcast()
           console.log(readyBroadcast)
+          break
+        }
+        case 'prunable': {
+          const prunable = await getPrunable()
+          console.log(prunable.map(distillBroadcast))
+          break
+        }
+        case 'prune': {
+          const numPruned = await prune()
+          console.log(`Pruned ${numPruned} broadcasts.`)
           break
         }
         case 'new': {

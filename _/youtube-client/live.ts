@@ -6,6 +6,7 @@ export default function (youtube: youtube_v3.Youtube) {
     goLive,
     getRecentBroadcasts,
     getReadyBroadcast,
+    getPrunable,
     createBroadcast,
   }
 
@@ -30,6 +31,39 @@ export default function (youtube: youtube_v3.Youtube) {
     return defaultStream as typeof defaultStream & { id: string }
   }
 
+  async function update() {
+    youtube.liveBroadcasts.update({
+      part: ['snippet'],
+      requestBody: { snippet: { title: '' } },
+    })
+  }
+
+  async function getPrunable() {
+    const defaultTitle = getDefaultTitle()
+    const recent = await getRecentBroadcasts()
+
+    return recent.filter((item) => {
+      if (!item.status || !item.contentDetails || !item.snippet) {
+        return false
+      }
+      const { title } = item.snippet
+      const { privacyStatus, lifeCycleStatus, recordingStatus } = item.status
+      const { enableAutoStart, enableAutoStop } = item.contentDetails
+
+      if (lifeCycleStatus !== 'ready' || recordingStatus !== 'notRecording') {
+        return false
+      }
+      return (
+        privacyStatus !== 'public' ||
+        !enableAutoStart ||
+        !enableAutoStop ||
+        title !== defaultTitle
+      )
+    })
+  }
+
+  // This `transition` call seemingly isn't necessary.
+  // (At least not when `enableAutoStart` is set on the broadcast.)
   async function goLive() {
     const broadcastResp = await youtube.liveBroadcasts.list({
       part: ['id', 'snippet', 'contentDetails', 'status'],
@@ -48,7 +82,7 @@ export default function (youtube: youtube_v3.Youtube) {
       throw new Error('No broadcasts in `ready` state.')
     }
 
-    // need to transition from ready to live
+    // transition from ready (?) to live
     const txResp = await youtube.liveBroadcasts.transition({
       id: readyBroadcast.id,
       part: ['snippet', 'status'],
@@ -86,9 +120,13 @@ export default function (youtube: youtube_v3.Youtube) {
     return readyBroadcast
   }
 
-  async function createBroadcast(streamId: string) {
+  function getDefaultTitle() {
     const now = new Date()
-    const title = `🔴 Live ${now.getMonth() + 1}/${now.getDate()}`
+    return `🔴 Live ${now.getMonth() + 1}/${now.getDate()}`
+  }
+
+  async function createBroadcast(streamId: string) {
+    const title = getDefaultTitle()
 
     const resp = await youtube.liveBroadcasts.insert({
       part: ['snippet', 'status', 'contentDetails'],
