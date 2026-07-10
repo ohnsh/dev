@@ -12,14 +12,27 @@ bug_ffmpeg_pulse() {
   export PULSE_SERVER="${PULSE_SERVER:-tcp:$host:4713}"
   echo "Starting audio recording from server: $PULSE_SERVER"
 
-  # possibly use `exec`
-  ffmpeg -hide_banner -y \
+  exec ffmpeg -hide_banner -y \
     -f pulse -i "default" \
     -c:a aac -b:a 128k \
     -f segment -segment_time "$seg_length" \
     -strftime 1 "$BUGDIR/bug_%Y%m%d_%H%M%S.aac"
 }
 
+bug_ffmpeg_pulse_opus() {
+  local host=${1:-mak.local}
+  local seg_length=3600
+
+  export PULSE_SERVER="${PULSE_SERVER:-tcp:$host:4713}"
+  echo "Starting audio recording from server: $PULSE_SERVER"
+
+  exec ffmpeg -hide_banner -y \
+    -f pulse -i "default" \
+    -c:a libopus -b:a 64k \
+    -f segment -segment_time "$seg_length" \
+    -strftime 1 "$BUGDIR/bug_%Y%m%d_%H%M%S.opus"
+}
+
 mkdir -p "$BUGDIR"
 
-bug_ffmpeg_pulse "$@"
+bug_ffmpeg_pulse_opus "$@"
