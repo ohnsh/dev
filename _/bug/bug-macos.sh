@@ -10,7 +10,8 @@ get_index() {
 }
 
 bug_ffmpeg() {
-  local index=$(get_index "$mic") || {
+  local index
+  index=$(get_index "$mic") || {
     echo "Error: couldn't find device: \"$mic\"" >&2
     exit 1
   }
@@ -53,18 +54,9 @@ bug_sox() {
 }
 
 clean_wav() {
-  # idea from Gemini if I decided to record uncompressed (could be flac or wav)
-  # so I can convert to aac (afconvert would use hardware acceleration).
-  while true; do
-    for f in segment_*.wav; do
-      # Check if the file exists and sox_ng is completely done writing to it
-      if [ -f "$f" ] && ! lsof "$f" >/dev/null 2>&1; then
-        echo "Encoding $f to AAC..."
-        afconvert -f m4af -d aac -b 160000 -q 127 -s 2 "$f" "${f%.wav}.m4a" && rm "$f"
-      fi
-    done
-    sleep 10
-  done
+  # for uncompressed (flac or wav) recordings on macOS
+  # (afconvert uses aac hardware encoder)
+  afconvert -f m4af -d aac -b 160000 -q 127 -s 2 "$1" "${1%.wav}.m4a" && rm "$1"
 }
 
 mkdir -p "$outdir"
