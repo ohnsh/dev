@@ -1,17 +1,50 @@
 #!/usr/bin/env bash
 
-FFMPEG="ffmpeg -hide_banner -v warning"
+ffmpeg="ffmpeg -v warning"
 
-# default of 10x timelapse.
+# default speed 10x.
 RATE=${RATE:-10}
 
-_timelapse() {
+# VideoToolbox (Apple Silicon) hardware acceleration
+timelapse_vtb() {
   # could potentially use an artificially high input `-r` to compress time
   # (instead of the `setpts` filter)
   # -r may not be doing any good here (and the input framerate likely isn't 30)
-  $FFMPEG -i "$1" -vf "setpts=PTS/$RATE" -r 30    \
+  $ffmpeg -i "$1" -vf "setpts=PTS/$RATE" -r 30    \
   -map 0:0 -c:v hevc_videotoolbox -tag:v hvc1  \
   -b:v 1M "t$1"
+}
+
+# Intel VAAPI hardware acceleration using quality parameter
+timelapse_vaapi() {
+  # when not decoding to vaapi (gpu mem)
+  # -vf 'format=nv12,hwupload'
+  $ffmpeg -vaapi_device /dev/dri/renderD128 \
+    -hwaccel vaapi \
+    -hwaccel_output_format vaapi \
+    -i "$1" \
+    -map 0:v \
+    -vf "setpts=PTS/$RATE" \
+    -r 30 \
+    -c:v hevc_vaapi \
+    -tag:v hvc1 \
+    -qp 28 \
+    "t$1"
+}
+
+# Intel VAAPI hardware acceleration using constant bitrate
+timelapse_vaapi_3M() {  
+  $ffmpeg -vaapi_device /dev/dri/renderD128 \
+    -hwaccel vaapi \
+    -hwaccel_output_format vaapi \
+    -i "$1" \
+    -map 0:v \
+    -vf "setpts=PTS/$RATE" \
+    -r 30 \
+    -c:v hevc_vaapi \
+    -tag:v hvc1 \
+    -b:v 3M \
+    "t$1"
 }
 
 _wyze_hour() {
@@ -33,11 +66,11 @@ _wyze_hour() {
     fi
 
     printf "    Processing minute %s...\r" "$min"
-    _timelapse "$min"
+    timelapse_vaapi "$min"
   done
 
   echo
-  $FFMPEG -f concat -safe 0 -i <(printf "file '%s'\n" t??.mp4) -c copy \
+  $ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" t??.mp4) -c copy \
     "../$hour.mp4"
 
   popd >/dev/null || return 1
