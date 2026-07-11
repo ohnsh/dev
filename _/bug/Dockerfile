@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache ffmpeg libpulse bash
+RUN apk add --no-cache ffmpeg libpulse bash tzdata
 
 WORKDIR /app
 

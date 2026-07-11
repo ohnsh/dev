@@ -13,7 +13,7 @@ _main() {
     --user "$(id -u):$(id -g)" \
     --restart unless-stopped \
     --add-host "$host:$(mdns_resolve "$host")" \
-    -e "BUGDIR=$BUGDIR" \
+    -e "BUGDIR=$BUGDIR" -e "TZ=$TZ" \
     -v "$host_bugdir:$BUGDIR" \
     "$image"
 }
