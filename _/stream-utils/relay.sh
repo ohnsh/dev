@@ -5,9 +5,9 @@ script_dir=${BASH_SOURCE[0]%/*}
 
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
-relay_rtsp() {
+thingino_url() {
   local host=${1:-"ing-wuuk.local"}
-  local addr rtsp
+  local addr
 
   addr=$(avahi-resolve -4 -n "$host" | cut -f 2)
 
@@ -16,8 +16,38 @@ relay_rtsp() {
     return 1
   fi
 
-  rtsp=rtsp://thingino:thingino@$addr/ch0
-  ffmpeg -i "$rtsp" -c copy -f flv "$YT_URL"
+  echo "rtsp://thingino:thingino@$addr/ch0"
+}
+
+relay_rtsp() {
+  # Thingino RTSP audio is 16 kHz / 32 kbps AAC, and apparently full of errors that need
+  # to be compensated for by the decoder. Stream copying it doesn't work with YouTube.
+  # Re-encoding with typical parameters causes the muxer to constantly warn about
+  # out-of-order timestamps.
+  #
+  # However, re-encoding with the same ultra-low parameters as the input seems to work:
+  # ffmpeg is quiet and YouTube accepts the stream. (The audio is atrocious but I doubt
+  # the camera is capable of producing anything better.)
+
+  local rtsp
+  rtsp=$(thingino_url "$@") || exit 1
+
+  ffmpeg -i "$rtsp" \
+    -c:v copy \
+    -c:a aac -ar 16k -b:a 32k \
+    -f flv "$YT_URL"
+}
+
+save_rtsp() {
+  local rtsp
+  rtsp=$(thingino_url "$@") || exit 1
+
+  ffmpeg -i "$rtsp" \
+    -c:v copy \
+    -c:a aac -ar 16k -b:a 32k \
+    -f segment -segment_time 300 \
+    -reset_timestamps 1 -segment_atclocktime 1 \
+    -strftime 1 "cam_%Y%m%d_%H%M%S.mp4"
 }
 
 buffer() {
@@ -27,4 +57,11 @@ buffer() {
     -strftime 1 "stream_buffer/%Y-%m-%d_%H-%M-%S.ts"
 }
 
-relay_rtsp "$@"
+if [[ $(type -t "$1") == "function" ]]; then
+  cmd=$1
+  shift
+  $cmd "$@"
+else
+  echo "$1 not a valid subcommand. Exiting." >&2
+  exit 1
+fi
