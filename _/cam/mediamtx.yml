@@ -826,9 +826,16 @@ paths:
   # my_camera:
   #   source: rtsp://my_camera
 
-  # wuuk:
-  #   source: rtsp://$CAM_USER:$CAM_PASS@$CAM_HOST:554/ch0
-  #   sourceOnDemand: yes
+  wuuk:
+    # sourceOnDemand: yes
+    record: yes
+    recordPath: /recordings/%path_%Y%m%d_%H%M%S
+    recordFormat: fmp4
+    recordPartDuration: 5s
+    recordMaxPartSize: 50M
+    recordSegmentDuration: 5m
+    recordDeleteAfter: 1d
+    # runOnReady: curl -d "wuuk ready" https://ntfy.sh/ohnsh-push
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.

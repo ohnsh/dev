@@ -10,7 +10,6 @@ docker run -dit \
   --restart unless-stopped \
   -e MTX_RTSPTRANSPORTS=tcp \
   -e MTX_PATHS_WUUK_SOURCE="$CAM_SOURCE" \
-  -e MTX_PATHS_WUUK_SOURCEONDEMAND="yes" \
   -p 8554:8554 \
   -p 1935:1935 \
   -p 8888:8888 \
