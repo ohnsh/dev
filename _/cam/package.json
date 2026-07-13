@@ -1,12 +1,8 @@
 {
-  "name": "stream-utils",
+  "name": "cam",
   "private": true,
   "dependencies": {
-    "simple-ffmpegjs": "^0.6.1",
     "youtube-client": "workspace:*"
-  },
-  "bin": {
-    "stream_folder": "./mkstream/stream_folder.sh"
   },
   "scripts": {
     "ensure": "youtube-client broadcast prepare",
