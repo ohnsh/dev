@@ -10,8 +10,6 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
   fi
   if [[ -f $script_dir/.env ]]; then
     . "$script_dir/.env"
-  else
-    echo "Environment file doesn't exist: $script_dir/.env" >&2
   fi
 fi
 
@@ -50,7 +48,7 @@ mmtx_url() {
 }
 
 prepare_broadcast() {
-  bun run youtube-client broadcast prepare
+  bunx youtube-client broadcast prepare
 }
 
 relay_rtsp() {
@@ -63,8 +61,7 @@ relay_rtsp() {
   # ffmpeg is quiet and YouTube accepts the stream. (The audio is atrocious but I doubt
   # the camera is capable of producing anything better.)
 
-  local rtsp
-  rtsp=$(mmtx_url "$@") || exit 1
+  local rtsp=$1
 
   prepare_broadcast || exit 1
 
@@ -74,29 +71,23 @@ relay_rtsp() {
     -f flv "$YT_URL"
 }
 
-save_rtsp() {
-  local rtsp
-  rtsp=$(thingino_url "$@") || exit 1
+buffer_rtsp() {
+  local rtsp=$1
 
   ffmpeg -i "$rtsp" \
     -c:v copy \
     -c:a aac -ar 16k -b:a 32k \
     -f segment -segment_time 300 \
     -reset_timestamps 1 -segment_atclocktime 1 \
+    -movflags frag_keyframe+empty_moov \
     -strftime 1 "cam_%Y%m%d_%H%M%S.mp4"
-}
-
-buffer() {
-  ffmpeg \
-    -c copy \
-    -f segment -segment_time 60 \
-    -strftime 1 "stream_buffer/%Y-%m-%d_%H-%M-%S.ts"
 }
 
 if [[ $(type -t "$1") == "function" ]]; then
   cmd=$1
   shift
-  $cmd "$@"
+  rtsp=$(mmtx_url "$@") || exit 1
+  $cmd "$rtsp"
 else
   echo "$1 not a valid subcommand. Exiting." >&2
   exit 1
