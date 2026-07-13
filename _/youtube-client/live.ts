@@ -125,14 +125,16 @@ export default function (youtube: youtube_v3.Youtube) {
     return `🔴 Live ${now.getMonth() + 1}/${now.getDate()}`
   }
 
-  async function createBroadcast(streamId: string) {
-    const title = getDefaultTitle()
-
+  async function createBroadcast(
+    streamId: string,
+    { title = getDefaultTitle(), description = '' } = {},
+  ) {
     const resp = await youtube.liveBroadcasts.insert({
       part: ['snippet', 'status', 'contentDetails'],
       requestBody: {
         snippet: {
           title,
+          description,
           scheduledStartTime: new Date().toISOString(),
         },
         status: {

@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { parseArgs } from 'node:util'
 import google, { type youtube_v3 } from '@googleapis/youtube'
 import auth from './auth'
 import liveOps from './live'
@@ -8,6 +9,20 @@ import videoOps from './video'
 const oauthClient = await auth()
 const youtube = google.youtube({ version: 'v3', auth: oauthClient })
 const [, , ...args] = Bun.argv
+
+const { values, positionals } = parseArgs({
+  args,
+  options: {
+    title: {
+      type: 'string',
+    },
+    description: {
+      type: 'string',
+    },
+  },
+  strict: true,
+  allowPositionals: true,
+})
 
 const {
   getDefaultStream,
@@ -19,6 +34,18 @@ const {
 } = liveOps(youtube)
 
 const video = videoOps(youtube)
+
+async function ensureReadyBroadcast() {
+  let readyBroadcast = await getReadyBroadcast()
+  if (readyBroadcast) {
+    console.log('Existing ready broadcast:')
+  } else {
+    const defaultStream = await getDefaultStream()
+    readyBroadcast = await createBroadcast(defaultStream.id, values)
+    console.log('Created new broadcast:')
+  }
+  console.log(distillBroadcast(readyBroadcast))
+}
 
 async function prune() {
   const prunable = await getPrunable()
@@ -72,8 +99,7 @@ function distillStream(apiStream: youtube_v3.Schema$LiveStream) {
 }
 
 async function main() {
-  const type = args.shift()
-  const op = args.shift()
+  const [type, op] = positionals
 
   switch (type) {
     case 'video':
@@ -103,15 +129,7 @@ async function main() {
     case 'broadcast':
       switch (op) {
         case 'ensure': {
-          let readyBroadcast = await getReadyBroadcast()
-          if (readyBroadcast) {
-            console.log('Existing ready broadcast:')
-          } else {
-            const defaultStream = await getDefaultStream()
-            readyBroadcast = await createBroadcast(defaultStream.id)
-            console.log('Created new broadcast:')
-          }
-          console.log(distillBroadcast(readyBroadcast))
+          ensureReadyBroadcast()
           break
         }
         case 'golive': {
@@ -136,7 +154,7 @@ async function main() {
         }
         case 'new': {
           const defaultStream = await getDefaultStream()
-          const newBroadcast = await createBroadcast(defaultStream.id)
+          const newBroadcast = await createBroadcast(defaultStream.id, values)
           console.log(distillBroadcast(newBroadcast))
           break
         }
@@ -158,17 +176,7 @@ async function main() {
       }
       break
     case undefined: {
-      const defaultStream = await getDefaultStream()
-      let readyBroadcast = await getReadyBroadcast()
-
-      if (readyBroadcast) {
-        console.log('Found existing ready broadcast.')
-      } else {
-        console.log('Creating new broadcast.')
-        readyBroadcast = await createBroadcast(defaultStream.id)
-      }
-
-      console.log(readyBroadcast)
+      ensureReadyBroadcast()
       break
     }
     default: {
