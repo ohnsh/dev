@@ -25,7 +25,7 @@ pip_mask_shadow() {
 color=s=480x270:c=black@0.6,pad=580:370:50:50:0x00000000,boxblur=10:5[shadow];
 [shadow][pip_rounded]overlay=50:50[pip_with_shadow];
 [main][pip_with_shadow]overlay=W-w-20:20" \
-    -c:v libx264 "$@"
+    -map "[main]" -map 0:a? -c:v libx264 -c:a copy "$@"
 }
 
 pip_melt() {

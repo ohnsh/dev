@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
-. "$SCRIPT_DIR/.env"
-. "$SCRIPT_DIR/lib.sh"
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+[[ -f $script_dir/.env ]] && . "$script_dir/.env"
+[[ -f $script_dir/lib.sh ]] || {
+  echo "Error: lib.sh must exist in script directory $script_dir" >&2
+  exit 1
+}
+. "$script_dir/lib.sh"
 
 fill_queue() {
   local DIR=${1%/}
@@ -76,14 +80,6 @@ stream_folder() {
       return 1
     fi
   done
-
-  # while true; do
-  #   # If the folder is empty, wait 5 seconds and check again
-  #     echo "Queue empty. Waiting for videos..."
-  #     sleep 5
-  #     continue
-  #   fi
-  # done
 }
 
 _fswatch() {
