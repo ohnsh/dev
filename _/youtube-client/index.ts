@@ -35,7 +35,12 @@ const {
 
 const video = videoOps(youtube)
 
-async function ensureReadyBroadcast() {
+async function prepareReadyBroadcast({ prune = false } = {}) {
+  if (prune) {
+    const numPruned = await pruneBroadcasts()
+    console.log(`Pruned ${numPruned} broadcasts.`)
+  }
+
   let readyBroadcast = await getReadyBroadcast()
   if (readyBroadcast) {
     console.log('Existing ready broadcast:')
@@ -47,7 +52,7 @@ async function ensureReadyBroadcast() {
   console.log(distillBroadcast(readyBroadcast))
 }
 
-async function prune() {
+async function pruneBroadcasts() {
   const prunable = await getPrunable()
   const responses = await Promise.all(
     prunable.map((item) => youtube.liveBroadcasts.delete({ id: item.id! })),
@@ -128,8 +133,8 @@ async function main() {
       break
     case 'broadcast':
       switch (op) {
-        case 'ensure': {
-          ensureReadyBroadcast()
+        case 'prepare': {
+          prepareReadyBroadcast({ prune: true })
           break
         }
         case 'golive': {
@@ -148,7 +153,7 @@ async function main() {
           break
         }
         case 'prune': {
-          const numPruned = await prune()
+          const numPruned = await pruneBroadcasts()
           console.log(`Pruned ${numPruned} broadcasts.`)
           break
         }
@@ -176,7 +181,7 @@ async function main() {
       }
       break
     case undefined: {
-      ensureReadyBroadcast()
+      prepareReadyBroadcast({ prune: true })
       break
     }
     default: {
