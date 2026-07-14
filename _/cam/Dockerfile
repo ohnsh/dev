@@ -1,13 +1,16 @@
-FROM bluenviron/mediamtx:latest-rpi AS mediamtx
+FROM bluenviron/mediamtx:latest AS mediamtx
 FROM alpine:latest
 
-# bluenviron/mediamtx images with non-`rpi` tag seem to be amd64 images, although they
-# run on the pi as far as I can tell.
+# note that a `latest-rpi` tag is available for mediamtx which includes libcamera and all
+# dependencies required to delcare a pi camera source for mediamtx.
+#
+# also note that a `latest-ffmpeg` tag is available that is essentially the same as this
+# build. I'm keeping this Dockerfile simply to get some more experience building images.
 
 COPY --from=mediamtx /mediamtx /
 COPY --from=mediamtx /mediamtx.yml /
 
 # add anything you need.
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg tzdata
 
 ENTRYPOINT [ "/mediamtx" ]

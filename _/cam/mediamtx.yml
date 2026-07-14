@@ -835,7 +835,16 @@ paths:
     recordMaxPartSize: 50M
     recordSegmentDuration: 5m
     recordDeleteAfter: 1d
+
+    # push notification:
     # runOnReady: curl -d "wuuk ready" https://ntfy.sh/ohnsh-push
+
+    # upload recordings on completion (adapted from MediaMTX docs):
+    # runOnInit: rclone move -v /recordings remote:/my-path/recordings
+    # runOnRecordSegmentComplete: rclone move -v --min-age=1ms /recordings remote:/my-path/recordings
+    #
+    # Can detect bind mounts from inside container by inspecting /proc/mounts
+    # or /proc/self/mountinfo
 
   # Settings under path "all_others" are applied to all paths that
   # do not match another entry.
