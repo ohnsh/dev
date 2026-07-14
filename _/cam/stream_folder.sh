@@ -65,6 +65,7 @@ stream_folder() {
   local in_dir=${1%/}
   local out_dir=${2%/}
   local movie
+  local -a movies
 
   if [[ ! -d $in_dir ]]; then
     echo "Error: input directory doesn't exist: $in_dir" >&2
@@ -73,14 +74,25 @@ stream_folder() {
 
   mkdir -p "$out_dir"
 
-  for movie in "$in_dir"/*.mp4; do
-    redact_tty ffmpeg \
-      -hide_banner \
-      -readrate 1 -readrate_catchup 2 \
-      -i "$movie" \
-      -c copy \
-      -f flv "$YT_URL" &&
+  while true; do
+    movies=("$in_dir"/*.mp4)
+    [[ -f $movies ]] || {
+      sleep 10
+      continue
+    }
+    for movie in "${movies[@]}"; do
+      [[ -f $movie ]] || continue
+      redact_tty ffmpeg \
+        -hide_banner \
+        -readrate 1 -readrate_catchup 2 \
+        -i "$movie" \
+        -c copy \
+        -f flv "$YT_URL" || {
+        echo "Error: ffmpeg non-zero exit status." >&2
+        return 1
+      }
       mv "$movie" "$out_dir"
+    done
   done
 }
 
