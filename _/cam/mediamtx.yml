@@ -826,9 +826,15 @@ paths:
   # my_camera:
   #   source: rtsp://my_camera
 
+  wyze1:
+    source: rtsp://thingino:thingino@ing-wyze-1.local:554/ch0
+    sourceOnDemand: yes
+    record: no
+
   wuuk:
-    # sourceOnDemand: yes
-    record: yes
+    source: rtsp://thingino:thingino@ing-wuuk.local:554/ch0
+    sourceOnDemand: yes
+    record: no
     recordPath: /recordings/%path_%Y%m%d_%H%M%S
     recordFormat: fmp4
     recordPartDuration: 5s

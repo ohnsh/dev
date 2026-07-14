@@ -9,21 +9,6 @@ mdns_resolve() {
   fi
 }
 
-CAM_USER=thingino
-CAM_PASS=thingino
-CAM_HOST=${CAM_HOST:-ing-wuuk.local}
-
-host_mapping=()
-if [[ $CAM_HOST == *.local ]]; then
-  CAM_IP=$(mdns_resolve "$CAM_HOST") || {
-    echo "Error resolving mdns name $CAM_HOST. (Is avahi-resolve installed?)" >&2
-    exit 1
-  }
-  host_mapping=(--add-host "$CAM_HOST:$CAM_IP")
-fi
-
-CAM_SOURCE=rtsp://$CAM_USER:$CAM_PASS@$CAM_HOST:554/ch0
-
 if [[ -d $HOME/Export ]]; then
   RECORDINGS_HOST=$HOME/Export/cam
 else
@@ -32,7 +17,26 @@ fi
 # prevent docker from creating directory with root ownership
 mkdir -p "$RECORDINGS_HOST"
 
+default_hosts=(ing-wuuk.local ing-wyze-1.local)
+get_host_mappings() {
+  local ip
+  [[ -n $* ]] || set -- "${default_hosts[@]}"
+  for host; do
+    if [[ $host == *.local ]]; then
+      ip=$(mdns_resolve "$host") || {
+        echo "Error resolving mdns name $host. (Is avahi-resolve installed?)" >&2
+        exit 1
+      }
+      host_mappings+=(--add-host "$host:$ip")
+    fi
+
+  done
+}
+
 run() {
+  local -a host_mappings
+  get_host_mappings "$@"
+
   docker run -dit \
     --name cam-proxy \
     --restart unless-stopped \
@@ -40,19 +44,20 @@ run() {
     --network host \
     -e "TZ" \
     -e MTX_RTSPTRANSPORTS=tcp \
-    -e MTX_PATHS_WUUK_SOURCE="$CAM_SOURCE" \
     -v ./mediamtx.yml:/mediamtx.yml:ro \
     -v "$RECORDINGS_HOST:/recordings" \
-    "${host_mapping[@]}" \
+    "${host_mappings[@]}" \
     cam-proxy
 
-    # -p 8554:8554 \
-    # -p 1935:1935 \
-    # -p 8888:8888 \
-    # -p 8889:8889 \
-    # -p 8890:8890/udp \
-    # -p 8189:8189/udp \
-    # -p 9997:9997 \
+  # CAM_SOURCE=rtsp://thingino:thingino@$CAM_HOST:554/ch0
+  # -e MTX_PATHS_WUUK_SOURCE="$CAM_SOURCE" \
+  # -p 8554:8554 \
+  # -p 1935:1935 \
+  # -p 8888:8888 \
+  # -p 8889:8889 \
+  # -p 8890:8890/udp \
+  # -p 8189:8189/udp \
+  # -p 9997:9997 \
   # bluenviron/mediamtx:latest-ffmpeg
   # -e MTX_WEBRTCADDITIONALHOSTS=192.168.x.x \
 }
@@ -69,4 +74,4 @@ run | build)
   ;;
 esac
 
-$cmd
+$cmd "$@"

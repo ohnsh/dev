@@ -37,7 +37,7 @@ thingino_url() {
 mmtx_url() {
   local host=${1:-r314.local}
   local addr
-  addr=$(avahi-resolve -4 -n "$host" | awk '{ print $2 }')
+  addr=$(maybe_resolve "$host")
 
   if [[ ${PIPESTATUS[0]} -ne 0 ]] || [[ -z "$addr" ]]; then
     echo "Error resolving host: $host" >&2
@@ -83,9 +83,42 @@ buffer_rtsp() {
     -strftime 1 "cam_%Y%m%d_%H%M%S.mp4"
 }
 
-if [[ $(type -t "$1") == "function" ]]; then
-  cmd=$1
-  shift
+maybe_resolve() {
+  local host=$1
+  if [[ $host == *.local ]]; then
+    avahi-resolve -4 -n "$host" | awk '{ print $2 }'
+  else
+    echo "$host"
+  fi
+}
+
+buffer_combined() {
+  local seg_length=300 # 5 minutes
+  local rtsp=$1
+  local host=mak.local
+
+  PULSE_SERVER=${PULSE_SERVER:-tcp:$(maybe_resolve "$host"):4713}
+  export PULSE_SERVER
+  echo "Recording audio from server: $PULSE_SERVER" >&2
+
+  ffmpeg -hide_banner -y \
+    -f rtsp -i "$rtsp" \
+    -f pulse -i "default" \
+    -map 0:v -map 1:a \
+    -c:v copy \
+    -c:a aac -b:a 128k \
+    -f segment -segment_time "$seg_length" \
+    -reset_timestamps 1 -segment_atclocktime 1 \
+    -movflags frag_keyframe+empty_moov \
+    -strftime 1 -use_wallclock_as_timestamps 1 \
+    "$CAM_DIR/cam_%Y%m%d_%H%M%S.mp4"
+}
+
+CAM_DIR=${CAM_DIR:-$HOME/Export/cam}
+
+cmd=${1//-/_}
+shift
+if [[ $(type -t "$cmd") == "function" ]]; then
   rtsp=$(mmtx_url "$@") || exit 1
   $cmd "$rtsp"
 else
