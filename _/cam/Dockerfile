@@ -11,6 +11,6 @@ COPY --from=mediamtx /mediamtx /
 COPY --from=mediamtx /mediamtx.yml /
 
 # add anything you need.
-RUN apk add --no-cache ffmpeg tzdata
+RUN apk add --no-cache ffmpeg curl tzdata
 
 ENTRYPOINT [ "/mediamtx" ]
