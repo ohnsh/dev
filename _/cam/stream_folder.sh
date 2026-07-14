@@ -74,6 +74,9 @@ stream_folder() {
 
   mkdir -p "$out_dir"
 
+  # Eventually this will use proper fs event monitoring.
+  # The standard on linux is inotify:
+  #   inotifywait -m -e close_write --format "%f" "$in_dir" | while read -r movie; ...
   while true; do
     movies=("$in_dir"/*.mp4)
     [[ -f $movies ]] || {
