@@ -17,7 +17,7 @@ fi
 # prevent docker from creating directory with root ownership
 mkdir -p "$RECORDINGS_HOST"
 
-default_hosts=(ing-wuuk.local ing-wyze-1.local)
+default_hosts=(ing-wuuk.local ing-wyze-1.local mak.local)
 get_host_mappings() {
   local ip
   [[ -n $* ]] || set -- "${default_hosts[@]}"
@@ -37,19 +37,22 @@ run() {
   local -a host_mappings
   get_host_mappings "$@"
 
+  export PULSE_SERVER=${PULSE_SERVER:-tcp:mak.local:4713}
+
   docker run -dit \
     --name cam-proxy \
     --restart unless-stopped \
     --user "$(id -u):$(id -g)" \
     --network host \
-    -e "TZ" \
-    -e MTX_RTSPTRANSPORTS=tcp \
+    -e TZ \
+    -e PULSE_SERVER \
     -v ./mediamtx.yml:/mediamtx.yml:ro \
     -v "$RECORDINGS_HOST:/recordings" \
     "${host_mappings[@]}" \
     cam-proxy
 
   # CAM_SOURCE=rtsp://thingino:thingino@$CAM_HOST:554/ch0
+  # -e MTX_RTSPTRANSPORTS=tcp \
   # -e MTX_PATHS_WUUK_SOURCE="$CAM_SOURCE" \
   # -p 8554:8554 \
   # -p 1935:1935 \

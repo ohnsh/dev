@@ -842,6 +842,15 @@ paths:
     recordSegmentDuration: 5m
     recordDeleteAfter: 1d
 
+  "~^(wuuk|wyze1)-patch":
+    runOnDemand: >
+      ffmpeg -hide_banner
+      -i rtsp://localhost:$RTSP_PORT/$G1
+      -f pulse -i "default"
+      -map 0:v -map 1:a
+      -c:v copy -c:a aac -b:a 64k
+      -f rtsp rtsp://localhost:$RTSP_PORT/$MTX_PATH
+
     # push notification:
     # runOnReady: curl -d "wuuk ready" https://ntfy.sh/ohnsh-push
 
