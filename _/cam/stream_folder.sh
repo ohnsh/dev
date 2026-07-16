@@ -38,7 +38,11 @@ status() {
   if [[ -z "$STATUS_FIFO" || ! -w "$STATUS_FIFO" ]]; then
     return
   fi
-  printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+
+  # Detect if the FIFO has a reader, to prevent blocking.
+  if fuser "$STATUS_FIFO" &>/dev/null; then
+    printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+  fi
 }
 
 redact_tty() {
@@ -81,20 +85,29 @@ stream_folder() {
 
   mkdir -p "$out_dir"
 
-  # Eventually this will use proper fs event monitoring.
-  # The standard on linux is inotify:
+  # The non-busybox utility:
   #   inotifywait -m -e close_write --format "%f" "$in_dir" | while read -r movie; ...
   while true; do
     movies=("$in_dir"/*.mp4)
-    [[ -f $movies ]] || {
+
+    # Very rough handling of open files that leans heavily on the second `fuser` check in
+    # the for loop that follows. There's also a race condition in which a file is closed
+    # after the `fuser` check but before `inotifyd` is ready.
+    if [[ ! -f ${movies[0]} ]] || fuser "${movies[0]}" &>/dev/null; then
       status "waiting"
-      inotifyd - "$in_dir:wy" | read -r
+      inotifyd - "$in_dir:wy0" | read -r
       status "continuing"
       continue
-    }
+    fi
+
     for movie in "${movies[@]}"; do
       [[ -f $movie ]] || continue
-      redact_tty ffmpeg \
+      fuser "$movie" &>/dev/null && break
+
+      # Removing redact_tty wrapper for now. There are lots of gotchas, e.g. signals,
+      # which could greatly complicate debugging. It was a fun exercise but it
+      # probably doesn't belong in production.
+      ffmpeg \
         -hide_banner \
         -readrate 1 -readrate_catchup 2 \
         -i "$movie" \

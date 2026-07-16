@@ -166,7 +166,11 @@ status() {
   if [[ -z "$STATUS_FIFO" || ! -w "$STATUS_FIFO" ]]; then
     return
   fi
-  printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+
+  # Detect if the FIFO has a reader, to prevent blocking.
+  if fuser "$STATUS_FIFO" &>/dev/null; then
+    printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+  fi
 }
 
 if [[ $(type -t "$cmd") == "function" ]]; then
