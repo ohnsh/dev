@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ffmpeg="ffmpeg -hide_banner -y"
 
 maybe_resolve() {
