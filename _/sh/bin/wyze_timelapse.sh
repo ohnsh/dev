@@ -1,56 +1,29 @@
 #!/usr/bin/env bash
 
-ffmpeg="ffmpeg -v warning"
+script_dir=$(dirname "$0")
+if [[ ! -f $script_dir/timelapse.sh ]]; then
+  echo "Required script $script_dir/timelapse.sh not found. Exiting." >&2
+  exit 1
+fi
+. "$script_dir/timelapse.sh"
 
-# default speed 10x.
-RATE=${RATE:-10}
+ffmpeg="ffmpeg -v warning -y"
 
-# VideoToolbox (Apple Silicon) hardware acceleration
-timelapse_vtb() {
-  # could potentially use an artificially high input `-r` to compress time
-  # (instead of the `setpts` filter)
-  # -r may not be doing any good here (and the input framerate likely isn't 30)
-  $ffmpeg -i "$1" -vf "setpts=PTS/$RATE" -r 30    \
-  -map 0:0 -c:v hevc_videotoolbox -tag:v hvc1  \
-  -b:v 1M "t$1"
-}
-
-# Intel VAAPI hardware acceleration using quality parameter
-timelapse_vaapi() {
-  # when not decoding to vaapi (gpu mem)
-  # -vf 'format=nv12,hwupload'
-  $ffmpeg -vaapi_device /dev/dri/renderD128 \
-    -hwaccel vaapi \
-    -hwaccel_output_format vaapi \
-    -i "$1" \
-    -map 0:v \
-    -vf "setpts=PTS/$RATE" \
-    -r 30 \
-    -c:v hevc_vaapi \
-    -tag:v hvc1 \
-    -qp 28 \
-    "t$1"
-}
-
-# Intel VAAPI hardware acceleration using constant bitrate
-timelapse_vaapi_3M() {  
-  $ffmpeg -vaapi_device /dev/dri/renderD128 \
-    -hwaccel vaapi \
-    -hwaccel_output_format vaapi \
-    -i "$1" \
-    -map 0:v \
-    -vf "setpts=PTS/$RATE" \
-    -r 30 \
-    -c:v hevc_vaapi \
-    -tag:v hvc1 \
-    -b:v 3M \
-    "t$1"
-}
+if ffmpeg -v error -encoders | grep -q hevc_videotoolbox; then
+  echo "Apple Silicon detected; using hevc_videotoolbox encoder." >&2
+  timelapse=timelapse_vtb
+elif ffmpeg -v error -encoders | grep -q hevc_vaapi; then
+  echo "Intel VAAPI platform detected; using hevc_vaapi encoder." >&2
+  timelapse=timelapse_vaapi
+else
+  echo "No hardware acceleration detected; using default libx265 encoder." >&2
+  timelapse=timelapse_libx265
+fi
 
 _wyze_hour() {
-  local _hour=$1 min
+  local _hour=$1 min hour
   pushd "$_hour" >/dev/null || exit 1
-  local hour=$(basename "$(pwd)")
+  hour=$(basename "$(pwd)")
 
   if [ -e "../$hour.mp4" ]; then
     printf "  Skipping hour %s...\n" "$hour"
@@ -66,7 +39,7 @@ _wyze_hour() {
     fi
 
     printf "    Processing minute %s...\r" "$min"
-    timelapse_vaapi "$min"
+    $timelapse "$min"
   done
 
   echo
@@ -92,8 +65,8 @@ _wyze_day() {
   done
 }
 
-if [[ ${BASH_SOURCE[0]} = "$0" ]]; then
-  if [[ $1 = "-h" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  if [[ $1 == "-h" ]]; then
     shift
     _wyze_hour "$@"
   else

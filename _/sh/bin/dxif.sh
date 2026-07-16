@@ -83,6 +83,19 @@ move() {
   DJI_*.MP4)
     catdir=_osmo
     ;;
+  bug_*.aac | bug_*.opus | bug*.ogg)
+    catdir="_bug"
+    ;;
+  wuuk_*.mp4 | wuuk-patch_*.mp4)
+    catdir="_wuuk"
+    ;;
+  wyze[0-9]_*.mp4 | wyze[0-9]-patch_*.mp4)
+    catdir="_${bn%%_*}"
+    catdir="${catdir%-patch}"
+    ;;
+  cam_*.mp4)
+    catdir="_cam"
+    ;;
   esac
 
   dn=$(realpath "$dn")
@@ -203,7 +216,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-_mext="jpg|jpeg|png|heic|mov|mp4|m4a|flac|wav|insv"
+_mext="jpg|jpeg|png|heic|mov|mp4|m4a|aac|opus|ogg|flac|wav|insv"
 
 if [ "$DXIF_MODE" = archive ]; then
   for arg; do
