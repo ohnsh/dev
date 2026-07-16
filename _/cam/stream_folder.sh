@@ -34,6 +34,13 @@ load_dotenv() {
   set +o allexport
 }
 
+status() {
+  if [[ -z "$STATUS_FIFO" || ! -w "$STATUS_FIFO" ]]; then
+    return
+  fi
+  printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+}
+
 redact_tty() {
   # This is mostly academic; I don't care much if the stream key is logged.
   # But I am screen-recording the output at times, so there is some logic to redacting it.
@@ -80,7 +87,9 @@ stream_folder() {
   while true; do
     movies=("$in_dir"/*.mp4)
     [[ -f $movies ]] || {
-      sleep 10
+      status "waiting"
+      inotifyd - "$in_dir:wy" | read -r
+      status "continuing"
       continue
     }
     for movie in "${movies[@]}"; do
@@ -92,6 +101,7 @@ stream_folder() {
         -c copy \
         -f flv "$YT_URL" || {
         echo "Error: ffmpeg non-zero exit status." >&2
+        status "error"
         return 1
       }
       mv "$movie" "$out_dir"
@@ -105,7 +115,6 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
   echo "Please provide YT_STREAM_KEY in environment or .env file." >&2
   exit 1
 fi
-
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
 bunx youtube-client broadcast prepare &&

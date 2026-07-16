@@ -162,11 +162,20 @@ fi
 
 echo "Streaming $cam from $host" >&2
 
+status() {
+  if [[ -z "$STATUS_FIFO" || ! -w "$STATUS_FIFO" ]]; then
+    return
+  fi
+  printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+}
+
 if [[ $(type -t "$cmd") == "function" ]]; then
   # Use mediamtx source instead of camera/Thingino directly.
   rtsp_url=$(get_rtsp_url) || exit 1
   echo "RTSP Source: $rtsp_url" >&2
-  $cmd
+  if ! $cmd; then
+    status "$cmd exited with error"
+  fi
 else
   echo "$1 not a valid subcommand. Exiting." >&2
   exit 1
