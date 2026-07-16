@@ -8,6 +8,7 @@ fi
 . "$script_dir/timelapse.sh"
 
 ffmpeg="ffmpeg -v warning -y"
+pltmp=.playlist.txt
 
 if ffmpeg -v error -encoders | grep -q hevc_videotoolbox; then
   echo "Apple Silicon detected; using hevc_videotoolbox encoder." >&2
@@ -43,8 +44,13 @@ _wyze_hour() {
   done
 
   echo
-  $ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" t??.mp4) -c copy \
+  printf "file '%s'\n" t??.mp4 >"$pltmp"
+  $ffmpeg \
+    -f concat -safe 0 \
+    -i "$pltmp" \
+    -c copy \
     "../$hour.mp4"
+  rm "$pltmp"
 
   popd >/dev/null || return 1
 }
