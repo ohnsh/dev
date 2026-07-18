@@ -1,0 +1,29 @@
+services:
+  cam-proxy:
+    image: cam-proxy:latest
+    container_name: cam-proxy
+    restart: unless-stopped
+    network_mode: host
+    user: $UID:$GID
+    tty: true
+    # stdin_open: true
+    environment:
+      - PULSE_SERVER
+      - TZ
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+      - $HOME/Export/cam:/recordings
+    extra_hosts:
+      - mak.local:$MAK_LOCAL_IP
+      - ing-wuuk.local:$WUUK_LOCAL_IP
+      - ing-wyze-1.local:$WYZE1_LOCAL_IP
+
+    # explicit ports not needed for host network mode
+    # ports:
+    #   - 8554:8554
+    #   - 1935:1935
+    #   - 8888:8888
+    #   - 8889:8889
+    #   - 8890:8890/udp
+    #   - 8189:8189/udp
+    #   - 9997:9997
