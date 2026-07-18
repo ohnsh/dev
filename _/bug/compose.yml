@@ -1,0 +1,16 @@
+services:
+  bug:
+    image: bug:latest
+    container_name: bug
+    restart: unless-stopped
+    user: $UID:$GID
+    tty: true
+    # stdin_open: true
+    environment:
+      - BUGDIR
+      - TZ
+    volumes:
+      - $HOME/Export/bug:$BUGDIR
+    extra_hosts:
+      - mak.local:$MAK_LOCAL_IP
+  
