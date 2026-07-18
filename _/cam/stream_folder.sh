@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+script_name=$(basename "$0")
+
 # walk from the project root (marked by .git or package.json) to the script directory,
 # sourcing all {.env,.env.*} files along the way. Sourcing happens with the `allexport`
 # shell option set so that the environment is modified.
@@ -41,7 +43,7 @@ status() {
 
   # Detect if the FIFO has a reader, to prevent blocking.
   if fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+    printf "%s\t%s\n" "${script_name:-$0}" "$*" >"$STATUS_FIFO"
   fi
 }
 

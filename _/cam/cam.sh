@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 ffmpeg="ffmpeg -hide_banner -y"
+script_name=$(basename "$0")
 
 maybe_resolve() {
   local host=$1
@@ -173,7 +174,7 @@ status() {
 
   # Detect if the FIFO has a reader, to prevent blocking.
   if fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "$0" "$*" >"$STATUS_FIFO"
+    printf "%s\t%s\n" "${script_name:-$0}" "$*" >"$STATUS_FIFO"
   fi
 }
 
