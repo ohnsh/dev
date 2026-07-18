@@ -40,7 +40,7 @@ timelapse_libx265() {
 # Intel VAAPI hardware acceleration using quality parameter
 timelapse_vaapi() {
   # local q_opts=(-b:v 3M)
-  local q_opts=()
+  local q_opts=(-qp 28)
 
   # when not decoding to vaapi (gpu mem)
   # -vf 'format=nv12,hwupload'

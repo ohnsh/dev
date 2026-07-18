@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-script_dir=$(dirname "$0")
+script_dir=$(dirname "${BASH_SOURCE[0]}")
 if [[ ! -f $script_dir/timelapse.sh ]]; then
   echo "Required script $script_dir/timelapse.sh not found. Exiting." >&2
   exit 1
