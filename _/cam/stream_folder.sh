@@ -94,10 +94,17 @@ stream_folder() {
     # the for loop that follows. There's also a race condition in which a file is closed
     # after the `fuser` check but before `inotifyd` is ready.
     if [[ ! -f ${movies[0]} ]] || fuser "${movies[0]}" &>/dev/null; then
-      status "waiting"
-      inotifyd - "$in_dir:wy0" | read -r
-      status "continuing"
-      continue
+      # For now, just quit when we run out of files. If we stop and then try to continue,
+      # the broadcast is over on YouTube and the stream just gets discarded. I could
+      # always run `youtube-client` to create a new broadcast, but I'm not sure how much I
+      # want to automate that.
+      status "empty. exiting."
+      break
+
+      # status "waiting"
+      # inotifyd - "$in_dir:wy0" | read -r
+      # status "continuing"
+      # continue
     fi
 
     for movie in "${movies[@]}"; do

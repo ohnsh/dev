@@ -145,6 +145,8 @@ relay() {
 }
 
 CAM_DIR=${CAM_DIR:-$HOME/Export/cam}
+mkdir -p "$CAM_DIR"
+
 script_dir=$(dirname "$0")
 
 cmd=${1//-/_}
