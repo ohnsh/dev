@@ -18,7 +18,7 @@ strobe() {
 }
 
 strobe_multi() {
-  local x out
+  local x=8 out
   while getopts 'x:o:' opt; do
     case "$opt" in
     x) x=$OPTARG ;;
@@ -31,11 +31,16 @@ strobe_multi() {
   local -a abs_paths
   readarray -t abs_paths < <(realpath "$@")
 
-  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "${abs_paths[@]}") \
+  local playlist
+  playlist=$(_playlist_alt "$@")
+
+  ffmpeg -f concat -safe 0 -i "$playlist" \
     -filter_complex "[0:v]setpts=PTS/$x,fps=30[fast]; $(_strobe_filter)" \
     -map "[v]" -shortest \
     -c:v libx265 -preset fast -tag:v hvc1 \
     "$out"
+
+  rm "$playlist"
 }
 
 strobe_hw() {
@@ -189,7 +194,17 @@ summary_inseek() {
     ((t_start += len))
   done
 
-  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD"/out-segments/*) -c:v libx265 -c:a aac -tag:v hvc1 "$@"
+  local playlist
+  playlist=$(_playlist_alt out-segments/*)
+
+  ffmpeg -f concat -safe 0 \
+    -i "$playlist" \
+    -c:v libx265 \
+    -c:a aac \
+    -tag:v hvc1 \
+    "$@"
+
+  rm "$playlist"
 }
 
 summary_segment() {
@@ -220,13 +235,30 @@ summary_segment() {
 
   rm "$dir"/*{1,3,5,7,9}.*
 
-  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "$PWD/$dir"/*) -c copy "$@"
+  local playlist
+  playlist=$(_playlist_alt "$dir"/*)
+
+  ffmpeg -f concat -safe 0 -i "$playlist" -c copy "$@"
+  rm "$playlist"
 }
 
 _playlist() {
   local -a abs_paths
   readarray -t abs_paths < <(realpath -- "$@")
   printf "file '%s'\n" "${abs_paths[@]}"
+}
+
+# In ffmpeg concat demuxer playlists, paths are relative to the playlist file, not the
+# current directory. When using process substitution to generate the list, the base
+# directory is /dev/fd, meaning all the paths must be absolute (which requires the `-safe
+# 0` option). Instead, I'm starting to prefer generating a temporary file in the current
+# directory. That said, it's not particularly elegant, and stopping an encode with SIGINT
+# will probably leave temp files around, so I'm on the fence.
+_playlist_alt() {
+  local tmp
+  tmp=$(mktemp -p .)
+  printf "file '%s'\n" "$@" >"$tmp"
+  echo "$tmp"
 }
 
 summary_segment_multi() {
