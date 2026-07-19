@@ -17,6 +17,27 @@ strobe() {
     "$@"
 }
 
+strobe_multi() {
+  local x out
+  while getopts 'x:o:' opt; do
+    case "$opt" in
+    x) x=$OPTARG ;;
+    o) out=$OPTARG ;;
+    \? | :) exit 1 ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  local -a abs_paths
+  readarray -t abs_paths < <(realpath "$@")
+
+  ffmpeg -f concat -safe 0 -i <(printf "file '%s'\n" "${abs_paths[@]}") \
+    -filter_complex "[0:v]setpts=PTS/$x,fps=30[fast]; $(_strobe_filter)" \
+    -map "[v]" -shortest \
+    -c:v libx265 -preset fast -tag:v hvc1 \
+    "$out"
+}
+
 strobe_hw() {
   local x=8 # default 8x speedup
   if [[ $1 == "-x" ]]; then

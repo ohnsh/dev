@@ -26,7 +26,7 @@ title_retro() {
 title_silent_audio() {
   # e.g. youtube requires an audio track
   ffmpeg -f lavfi -i "color=color=#222222:s=1920x1080:d=5:r=30" -f lavfi -i "anullsrc=cl=stereo:r=44100" \
-    -vf "drawtext=fontfile=font.ttf:text='Stream Launching':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
+    -vf "drawtext=fontfile=$font:text='Stream Launching':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2" \
     -c:v libx264 -c:a aac -pix_fmt yuv420p -g 60 title_card.mp4
 }
 
