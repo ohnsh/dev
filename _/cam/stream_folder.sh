@@ -74,6 +74,26 @@ EOF
   return "${PIPESTATUS[0]}"
 }
 
+wait_folder() {
+  local in_dir=$1
+  local min_ready=${2:-2}
+  local num_ready=0
+
+  while true; do
+    for movie in "$in_dir"/*.mp4; do
+      if [[ ! -f $movie ]] || fuser "$movie" &>/dev/null; then
+        continue
+      fi
+      num_ready=$((num_ready + 1))
+      [[ num_ready -lt 2 ]] || return
+    done
+
+    status "waiting"
+    inotifyd - "$in_dir:wy0" | read -r
+    status "continuing"
+  done
+}
+
 stream_folder() {
   local in_dir=${1%/}
   local out_dir=${2%/}
@@ -87,8 +107,11 @@ stream_folder() {
 
   mkdir -p "$out_dir"
 
-  # The non-busybox utility:
-  #   inotifywait -m -e close_write --format "%f" "$in_dir" | while read -r movie; ...
+  # wait until in_dir contains at least 2 files that aren't open for writing.
+  wait_folder "$in_dir" 2
+  # ensure a broadcast is ready (usually means create one)
+  bunx youtube-client broadcast prepare
+
   while true; do
     movies=("$in_dir"/*.mp4)
 
@@ -97,9 +120,9 @@ stream_folder() {
     # after the `fuser` check but before `inotifyd` is ready.
     if [[ ! -f ${movies[0]} ]] || fuser "${movies[0]}" &>/dev/null; then
       # For now, just quit when we run out of files. If we stop and then try to continue,
-      # the broadcast is over on YouTube and the stream just gets discarded. I could
-      # always run `youtube-client` to create a new broadcast, but I'm not sure how much I
-      # want to automate that.
+      # the broadcast is over on YouTube and the stream is silently discarded. I could
+      # always run `youtube-client` to create a new broadcast, but I'm not sure I want to
+      # put that in a `while true` loop.
       status "empty. exiting."
       break
 
@@ -107,6 +130,9 @@ stream_folder() {
       # inotifyd - "$in_dir:wy0" | read -r
       # status "continuing"
       # continue
+      # 
+      # The non-busybox utility:
+      #   inotifywait -m -e close_write --format "%f" "$in_dir" | while read -r movie; ...
     fi
 
     for movie in "${movies[@]}"; do
@@ -139,5 +165,4 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
 fi
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
-bunx youtube-client broadcast prepare &&
-  stream_folder "$@"
+stream_folder "$@"
