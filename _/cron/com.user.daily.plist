@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
+<plist version="1.0">
+<!-- https://gist.github.com/yoginsurya/f7ee94550d6d421ea2675fa4d6aee281 -->
+<dict>
+    <key>Label</key>
+    <string>com.user.daily</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/jms/dev/_/cron/daily.sh</string>
+        <!-- <string>arg1</string> -->
+    </array>
+
+    <!-- Inject Homebrew path directly into the execution environment -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>WakeSystem</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/jms/_/logs/daily.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/jms/_/logs/daily.err</string>
+</dict>
+</plist>
+
