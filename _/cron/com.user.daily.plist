@@ -8,16 +8,18 @@
 
     <key>ProgramArguments</key>
     <array>
+        <string>/Applications/Ghostty.app/Contents/MacOS/ghostty</string>
+        <string>-e</string>
         <string>/Users/jms/dev/_/cron/daily.sh</string>
         <string>bug-archive</string>
     </array>
 
-    <!-- Inject Homebrew path directly into the execution environment -->
-    <!-- <key>EnvironmentVariables</key>
+    <!-- Help the script detect whether launchd is running it. -->
+    <key>EnvironmentVariables</key>
     <dict>
-        <key>PATH</key>
-        <string></string>
-    </dict> -->
+        <key>CRON_DIR</key>
+        <string>/Users/jms/_/cron</string>
+    </dict>
 
     <key>StartCalendarInterval</key>
     <dict>
@@ -29,6 +31,10 @@
 
     <key>WakeSystem</key>
     <true/>
+
+    <!-- Essential so Ghostty can connect to macOS GUI session -->
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
 
     <key>StandardOutPath</key>
     <string>/Users/jms/_/cron/logs/daily.log</string>
