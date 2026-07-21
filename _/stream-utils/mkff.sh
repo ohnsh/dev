@@ -254,6 +254,8 @@ _playlist() {
 # 0` option). Instead, I'm starting to prefer generating a temporary file in the current
 # directory. That said, it's not particularly elegant, and stopping an encode with SIGINT
 # will probably leave temp files around, so I'm on the fence.
+#
+# See doc/trap.md for examples of how to trap exit signals and clean up temp files
 _playlist_alt() {
   local tmp
   tmp=$(mktemp -p .)
