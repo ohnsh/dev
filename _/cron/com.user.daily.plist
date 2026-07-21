@@ -9,15 +9,15 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Users/jms/dev/_/cron/daily.sh</string>
-        <!-- <string>arg1</string> -->
+        <string>bug-archive</string>
     </array>
 
     <!-- Inject Homebrew path directly into the execution environment -->
-    <key>EnvironmentVariables</key>
+    <!-- <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-    </dict>
+        <string></string>
+    </dict> -->
 
     <key>StartCalendarInterval</key>
     <dict>
@@ -31,9 +31,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>/Users/jms/_/logs/daily.log</string>
+    <string>/Users/jms/_/cron/logs/daily.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/jms/_/logs/daily.err</string>
+    <string>/Users/jms/_/cron/logs/daily.err</string>
 </dict>
 </plist>
 

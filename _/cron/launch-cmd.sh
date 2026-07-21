@@ -41,7 +41,7 @@ cmd=$1
 shift
 
 case "$cmd" in
-load | unload | list | kickstart)
+load | unload | install | list | kickstart)
   $cmd "$@"
   ;;
 *)
