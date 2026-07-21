@@ -1,3 +1,6 @@
+# Source this file before running `docker compose`
+# It's for containers running Alpine, since there's no mDNS resolver
+
 mdns_resolve() {
   local host=$1
   avahi-resolve -4 -n "$host" | awk '{ print $2 }'
