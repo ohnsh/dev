@@ -3,6 +3,7 @@
 # Client-side script used with launchd for automation.
 # stdout and stderr are redirected to files in $HOME/_/logs
 
+# Use ~/Downloads instead?
 CRON_DIR=${CRON_DIR:-$HOME/_/cron}
 mkdir -p "$CRON_DIR"
 
@@ -57,16 +58,21 @@ bug_archive() {
   # logstamp.sh */*
 }
 
+# Now uses same SSH key and SFTP backend as scp.
+rclone() {
+  local remote=$1
+  local loc=$2
+
+  command rclone copy \
+    --progress \
+    "box:$remote" "$loc"
+}
+
 # launchd runs jobs in a nearly-empty environment
 if [[ -z $PROFILE ]]; then
   export PROFILE=$HOME/.bash_profile
   . "$PROFILE"
 fi
-
-# scp -i "$HOME/.ssh/id_ed25519_scp" -r jms@box.local:Export/bug bug # ...
-
-# rclone paths are based in $HOME/Export on remote host.
-# rclone copy -P box:bug bug
 
 # logstamp.sh /Volumes/Media/
 
@@ -74,7 +80,7 @@ cmd=${1//-/_}
 shift
 
 case "$cmd" in
-ssh | env | scp | bug_archive)
+ssh | env | scp | bug_archive | rclone)
   $cmd "$@"
   ;;
 *)

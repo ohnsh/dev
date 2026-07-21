@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 
 # Forced command for restricted (non-password-protected) SSH key used in cron/launchd
-# automation.
+# automation. In authorized_keys:
+#   restrict,command="$HOME/dev/_/cron/remote.sh" ssh-ed25519 KEY1
+#
+# Separate key supporting automation with rclone and scp:
+#   restrict,command="/usr/lib/ssh/sftp-server" ssh-ed25519 KEY3
+#
+# Previously, I had a separate key and backend for rclone...
+#   restrict,command="/usr/bin/rclone serve sftp --stdio $HOME/Export" ssh-ed25519 KEY2
+#
+# But it's better to simply use the rclone CLI with the existing scp key and OpenSSH sftp
+# server. The rclone backend is actually a downgrade because, when run in ssh-activated
+# `--stdio` mode, you have to set `--transfers 1` (see `rclone serve sftp --help`). (Note
+# that rclone can also run as an independent sftp server, on a different port, without
+# that restriction.)
 
 script=$(basename "$0")
 # shopt -s extglob
