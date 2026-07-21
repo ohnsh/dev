@@ -48,10 +48,6 @@ get_yt_url() {
   echo "rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY"
 }
 
-seg_name() {
-  echo "${cam}_%Y%m%d_%H%M%S.mp4"
-}
-
 # ffmpeg options for recording to strftime-named segments on disk.
 set_seg_opts() {
   local seg_length=${1:-300} # Default 5 mins
@@ -103,7 +99,7 @@ record_combined() {
     -map 0:v -map "[delayed_audio]" \
     -c:v copy -c:a aac -b:a 64k \
     "${seg_opts[@]}" \
-    "$CAM_DIR/$(seg_name)"
+    "$CAM_DIR/$seg_name"
 }
 
 record() {
@@ -114,7 +110,7 @@ record() {
   $ffmpeg -i "$rtsp_url" \
     "${codec_opts[@]}" \
     "${seg_opts[@]}" \
-    "$CAM_DIR/$(seg_name)"
+    "$CAM_DIR/$seg_name"
 }
 
 prepare_broadcast() {
@@ -179,9 +175,14 @@ status() {
 }
 
 if [[ $(type -t "$cmd") == "function" ]]; then
-  # Use mediamtx source instead of camera/Thingino directly.
+  # Either points to mediamtx or camera/Thingino directly.
   rtsp_url=$(get_rtsp_url) || exit 1
   echo "RTSP Source: $rtsp_url" >&2
+
+  # Changed so that lexical order is chronological order, even when camera switches.
+  seg_name=cam_%Y%m%d_%H%M%S_${cam}.mp4
+  echo "Segment format: $CAM_DIR/$seg_name" >&2
+
   if ! $cmd; then
     status "$cmd exited with error"
   fi
