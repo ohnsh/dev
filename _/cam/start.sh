@@ -6,9 +6,13 @@ STATUS_FIFO=${STATUS_FIFO:-$PWD/status.fifo}
 new() {
   if ! tmux has-session -t stream 2>/dev/null; then
     [[ -f $STATUS_FIFO ]] || mkfifo "$STATUS_FIFO"
+    # important to set env this way because it's inherited from the tmux server, not the
+    # current shell.
     exec tmux new-session \
       -s stream \
       -e "STATUS_FIFO=$STATUS_FIFO" \
+      ${STREAM_DIR:+-e STREAM_DIR="$STREAM_DIR"} \
+      ${STREAM_ARCHIVE_DIR:+-e STREAM_ARCHIVE_DIR="$STREAM_ARCHIVE_DIR"} \
       "./monitor.sh <>\"\$STATUS_FIFO\"" \
       \; new-win \
       \; split-win -h -d
@@ -16,20 +20,11 @@ new() {
   exec tmux attach -t stream
 }
 
-record() {
-  local cam=$1
-  "$script_dir/cam.sh" record localhost "$cam"
-}
-
-stream() {
-  "$script_dir/stream_folder.sh" "$HOME/Export/cam" "$HOME/export/cam_out"
-}
-
 cmd=${1:-new}
 shift
 
 case "$cmd" in
-new | record | stream)
+new)
   $cmd "$@"
   ;;
 *)

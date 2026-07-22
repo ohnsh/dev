@@ -76,9 +76,10 @@ EOF
 wait_folder() {
   local in_dir=$1
   local min_ready=${2:-2}
-  local num_ready=0
+  local num_ready
 
   while true; do
+    num_ready=0
     for movie in "$in_dir"/*.mp4; do
       if [[ ! -f $movie ]] || fuser "$movie" &>/dev/null; then
         continue
@@ -94,8 +95,7 @@ wait_folder() {
 }
 
 stream_folder() {
-  local in_dir=${1%/}
-  local out_dir=${2%/}
+  local in_dir=${STREAM_DIR%/} out_dir=${STREAM_ARCHIVE_DIR%/}
   local movie
   local -a movies
 
@@ -164,4 +164,7 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
 fi
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
-stream_folder "$@"
+STREAM_DIR=${1:-${STREAM_DIR:-$HOME/Export/cam}}
+STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-${STREAM_DIR}-archive}}
+
+stream_folder
