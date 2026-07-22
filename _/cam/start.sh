@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
 script_dir=$(dirname "$0")
+STATUS_FIFO=${STATUS_FIFO:-$PWD/status.fifo}
 
 new() {
   if ! tmux has-session -t stream 2>/dev/null; then
+    [[ -f $STATUS_FIFO ]] || mkfifo "$STATUS_FIFO"
     exec tmux new-session \
       -s stream \
-      -e "STATUS_FIFO=$PWD/status.fifo" \
-      './monitor.sh <>"$STATUS_FIFO"' \
+      -e "STATUS_FIFO=$STATUS_FIFO" \
+      "./monitor.sh <>\"\$STATUS_FIFO\"" \
       \; new-win \
       \; split-win -h -d
   fi
