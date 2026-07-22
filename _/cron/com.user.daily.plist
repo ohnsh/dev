@@ -11,7 +11,7 @@
         <string>/Applications/Ghostty.app/Contents/MacOS/ghostty</string>
         <string>-e</string>
         <string>/Users/jms/dev/_/cron/daily.sh</string>
-        <string>bug-archive</string>
+        <string>archive</string>
     </array>
 
     <!-- Help the script detect whether launchd is running it. -->

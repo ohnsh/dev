@@ -46,26 +46,33 @@ env() {
 }
 
 bug_archive() {
+  # technically, this is set on the server by the environment.
   local remote_dir=Export/bug-archive
   local local_dir=$CRON_DIR/bug-archive
 
   ssh bug-archive &&
     scp -r "$remote_dir" "$local_dir" &&
-    ssh bug-archive-clean
+    ssh bug-archive-clean ||
+    echo "bug-archive: Error exit status from scp/ssh pipeline." >&2
 
   # dxif.sh -1 bug-archive
   # cd "$mo"
   # logstamp.sh */*
 }
 
-# Now uses same SSH key and SFTP backend as scp.
-rclone() {
-  local remote=$1
-  local loc=$2
+cam_archive() {
+  # technically, this is set on the server by the environment.
+  local remote_dir=Export/cam-archive
+  local local_dir=$CRON_DIR/cam-archive
 
-  command rclone copy \
-    --progress \
-    "box:$remote" "$loc"
+  # Now uses same SSH key and SFTP backend as scp.
+  rclone move -P "box:$remote_dir" "$local_dir" ||
+    echo "cam-archive: Error exit status from rclone." >&2
+}
+
+archive() {
+  bug_archive
+  cam_archive
 }
 
 # launchd runs jobs in a nearly-empty environment
@@ -74,13 +81,12 @@ if [[ -z $PROFILE ]]; then
   . "$PROFILE"
 fi
 
-# logstamp.sh /Volumes/Media/
-
-cmd=${1//-/_}
+cmd=${1:-archive}
+cmd=${cmd//-/_}
 shift
 
 case "$cmd" in
-ssh | env | scp | bug_archive | rclone)
+ssh | env | scp | archive | bug_archive | cam_archive)
   $cmd "$@"
   ;;
 *)
