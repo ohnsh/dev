@@ -37,13 +37,12 @@ load_dotenv() {
 }
 
 status() {
-  if [[ -z "$STATUS_FIFO" || ! -w "$STATUS_FIFO" ]]; then
-    return
-  fi
-
+  # Log to stderr and FIFO if available.
   # Detect if the FIFO has a reader, to prevent blocking.
-  if fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "${script_name:-$0}" "$*" >"$STATUS_FIFO"
+  if [[ -w $STATUS_FIFO ]] && fuser "$STATUS_FIFO" &>/dev/null; then
+    printf "%s\t%s\n" "${script_name:-$0}" "$*" | tee "$STATUS_FIFO" >&2
+  else
+    printf "%s*\t%s\n" "${script_name:-$0}" "$*" >&2
   fi
 }
 
@@ -88,9 +87,9 @@ wait_folder() {
       [[ num_ready -lt 2 ]] || return
     done
 
-    status "waiting"
+    status "Waiting..."
     inotifyd - "$in_dir:wy0" | read -r
-    status "continuing"
+    status "Continuing."
   done
 }
 
