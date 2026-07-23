@@ -52,8 +52,7 @@ bug_archive() {
 
   ssh bug-archive &&
     scp -r "$remote_dir" "$local_dir" &&
-    ssh bug-archive-clean ||
-    echo "bug-archive: Error exit status from scp/ssh pipeline." >&2
+    ssh bug-archive-clean
 
   # dxif.sh -1 bug-archive
   # cd "$mo"
@@ -66,13 +65,30 @@ cam_archive() {
   local local_dir=$CRON_DIR/cam-archive
 
   # Now uses same SSH key and SFTP backend as scp.
-  rclone move -P "box:$remote_dir" "$local_dir" ||
-    echo "cam-archive: Error exit status from rclone." >&2
+  rclone move -P "box:$remote_dir" "$local_dir"
+}
+
+script_name=$(basename "$0")
+status() {
+  echo "$script_name: $*"
 }
 
 archive() {
-  bug_archive
-  cam_archive
+  status "Running archive."
+
+  if bug_archive; then
+    status "bug-archive: succeeded."
+  else
+    status "bug-archive: $? exit status from ssh/scp pipeline."
+  fi
+
+  if cam_archive; then
+    status "cam-archive: succeeded."
+  else
+    echo "cam-archive: $? exit status from rclone."
+  fi
+
+  status "Exiting archive."
 }
 
 # launchd runs jobs in a nearly-empty environment
