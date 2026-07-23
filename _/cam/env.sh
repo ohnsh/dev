@@ -6,12 +6,13 @@ mdns_resolve() {
   avahi-resolve -4 -n "$host" | awk '{ print $2 }'
 }
 
-# Export all vars for docker compose environment.
-set -a
+# set -a
 MAK_LOCAL_IP=$(mdns_resolve mak.local)
 WUUK_LOCAL_IP=$(mdns_resolve ing-wuuk.local)
 WYZE1_LOCAL_IP=$(mdns_resolve ing-wyze-1.local)
 PULSE_SERVER=tcp:mak.local:4713
-export UID
 GID=$(id -g)
-set +a
+
+# Export all vars for docker compose environment.
+export MAK_LOCAL_IP WUUK_LOCAL_IP WYZE1_LOCAL_IP PULSE_SERVER GID UID
+# set +a

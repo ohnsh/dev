@@ -27,3 +27,9 @@ services:
     #   - 8890:8890/udp
     #   - 8189:8189/udp
     #   - 9997:9997
+
+    # other recommended vars:
+    # MTX_RTSPTRANSPORTS=tcp \
+    # MTX_WEBRTCADDITIONALHOSTS=192.168.x.x \
+    # config via environment:
+    # MTX_PATHS_WUUK_SOURCE="$CAM_SOURCE" \

@@ -1,49 +1,11 @@
 #!/usr/bin/env bash
 
 script_name=$(basename "$0")
+script_dir=$(dirname "$0")
 
-# walk from the project root (marked by .git or package.json) to the script directory,
-# sourcing all {.env,.env.*} files along the way. Sourcing happens with the `allexport`
-# shell option set so that the environment is modified.
-load_dotenv() {
-  local script_dir=$(dirname "${BASH_SOURCE[0]}")
-  local dir=$script_dir
-  local dotenv i
-  local stack=()
-
-  while [[ -n $dir ]]; do
-    for dotenv in "$dir"/.env{,.*}; do
-      # always expands to at least .env, even if it doesn't exist
-      [[ -f "$dotenv" ]] || continue
-      stack+=("$dotenv")
-    done
-    # Don't walk past project root (marked by package.json OR .git)
-    [[ -f "$dir/package.json" || -d "$dir/.git" ]] && break
-    # Move to parent directory for next iteration
-    dir=${dir%/*}
-  done
-
-  # Source dotenv files with allexport set so that environment is modified
-  # without the files needing an explicit `export` on every line.
-  set -o allexport
-
-  # Start at the top of the stack by looping backwards. This ensures that
-  # nearer/more specific dotenv files override those closer to the project root.
-  for ((i = 1; i <= ${#stack[@]}; i++)); do
-    dotenv=${stack[-i]}
-    . "$dotenv"
-  done
-  set +o allexport
-}
-
-status() {
-  # Log to stderr and FIFO if available.
-  # Detect if the FIFO has a reader, to prevent blocking.
-  if [[ -w $STATUS_FIFO ]] && fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "${script_name:-$0}" "$*" | tee "$STATUS_FIFO" >&2
-  else
-    printf "%s*\t%s\n" "${script_name:-$0}" "$*" >&2
-  fi
+. "$script_dir/lib.sh" || {
+  echo "Couldn't load required helper $script_dir/lib.sh." >&2
+  exit 1
 }
 
 redact_tty() {
@@ -88,9 +50,9 @@ wait_folder() {
       [[ num_ready -lt 2 ]] || return
     done
 
-    status "Waiting..."
+    fstatus "Waiting..."
     inotifyd - "$in_dir:wy0" | read -r
-    status "Continuing."
+    fstatus "Continuing."
   done
 }
 
@@ -122,12 +84,12 @@ stream_folder() {
       # the broadcast is over on YouTube and the stream is silently discarded. I could
       # always run `youtube-client` to create a new broadcast, but I'm not sure I want to
       # put that in a `while true` loop.
-      status "empty. exiting."
+      fstatus "empty. exiting."
       break
 
-      # status "waiting"
+      # fstatus "waiting"
       # inotifyd - "$in_dir:wy0" | read -r
-      # status "continuing"
+      # fstatus "continuing"
       # continue
       # 
       # The non-busybox utility:
@@ -148,7 +110,7 @@ stream_folder() {
         -c copy \
         -f flv "$YT_URL" || {
         echo "Error: ffmpeg non-zero exit status." >&2
-        status "error"
+        fstatus "error"
         return 1
       }
       mv "$movie" "$out_dir"

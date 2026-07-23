@@ -2,11 +2,19 @@
 
 ffmpeg="ffmpeg -hide_banner -y"
 script_name=$(basename "$0")
+script_dir=$(dirname "$0")
+
+. "$script_dir/lib.sh" || {
+  echo "Couldn't load required helper $script_dir/lib.sh." >&2
+  exit 1
+}
 
 maybe_resolve() {
   local host=$1
   if [[ $host == *.local ]]; then
-    avahi-resolve -4 -n "$host" | awk '{ print $2 }'
+    # use our library function
+    mdns_resolve "$host"
+    # avahi-resolve -4 -n "$host" | awk '{ print $2 }'
   else
     echo "$host"
   fi
@@ -163,16 +171,6 @@ fi
 
 echo "Streaming $cam from $host" >&2
 
-status() {
-  # Log to stderr and FIFO if available.
-  # Detect if the FIFO has a reader, to prevent blocking.
-  if [[ -w $STATUS_FIFO ]] && fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "${script_name:-$0}" "$*" | tee "$STATUS_FIFO" >&2
-  else
-    printf "%s*\t%s\n" "${script_name:-$0}" "$*" >&2
-  fi
-}
-
 if [[ $(type -t "$cmd") == "function" ]]; then
   # Either points to mediamtx or camera/Thingino directly.
   rtsp_url=$(get_rtsp_url) || exit 1
@@ -183,7 +181,7 @@ if [[ $(type -t "$cmd") == "function" ]]; then
   echo "Segment format: $CAM_DIR/$seg_name" >&2
 
   if ! $cmd; then
-    status "$cmd exited with error"
+    fstatus "$cmd exited with error"
   fi
 else
   echo "$1 not a valid subcommand. Exiting." >&2
