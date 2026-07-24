@@ -24,11 +24,23 @@ script=$(basename "$0")
 BUG_DIR=$HOME/Export/bug
 ARCHIVE_DIR=$BUG_DIR-archive
 
+lsof_t() {
+  local file=$1
+
+  # on a busybox system, we actually want fuser
+  # in both cases, the exit status is zero when the file is open, non-zero otherwise.
+  if [[ $(readlink "$(command -v lsof)") == */busybox ]]; then
+    fuser "$file" 2>/dev/null
+  else
+    command lsof -t "$file" 2>/dev/null
+  fi
+}
+
 bug_archive() {
   mkdir -p "$ARCHIVE_DIR"
 
   for file in "$BUG_DIR"/*; do
-    if [[ -n "$(fuser "$file")" ]]; then
+    if lsof_t "$file" &>/dev/null; then
       echo "$file currently open; skipping" >&2
       continue
     fi
@@ -40,15 +52,9 @@ bug_archive_clean() {
   rm -rf "$ARCHIVE_DIR"
 }
 
-env() {
-  command env
-}
-
 # possibly eval "set -- $SSH_ORIGINAL_COMMAND" to allow embedded quoting
-[[ -n $SSH_ORIGINAL_COMMAND ]] &&
-  set -- $SSH_ORIGINAL_COMMAND
-[[ $1 == "$script" ]] &&
-  shift
+set -- $SSH_ORIGINAL_COMMAND
+[[ $1 == "$script" ]] && shift
 
 cmd=${1//-/_}
 shift
