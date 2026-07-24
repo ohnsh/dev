@@ -36,6 +36,7 @@ scp() {
   fi
   local remote=$1
   local loc=$2
+
   command scp \
     -F /dev/null \
     -i "$HOME/.ssh/id_ed25519_scp" \
@@ -54,12 +55,13 @@ bug_archive() {
   # technically, this is set on the server by the environment.
   local remote_dir=Export/bug-archive
 
-  # if we name `bug-archive` and it exists, the remote directory will be nested inside it
+  # if we name `bug-archive` and it exists, the remote directory will be nested inside it.
+  # normalize trailing slash (one is added on the command line)
   # another option might be to append `/*` to remote_dir
-  local local_dir=$CRON_DIR
+  local local_dir=${CRON_DIR%/}
 
   ssh bug-archive &&
-    scp -r "$remote_dir" "$local_dir" &&
+    scp -r "$remote_dir" "$local_dir/" &&
     ssh bug-archive-clean
 
   # dxif.sh -1 bug-archive
