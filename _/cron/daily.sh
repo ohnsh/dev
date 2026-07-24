@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
 # Client-side script used with launchd for automation.
-# stdout and stderr are redirected to files in $HOME/_/logs
 
 # Use ~/Downloads instead?
 CRON_DIR=${CRON_DIR:-$HOME/_/cron}
-mkdir -p "$CRON_DIR"
+CRON_LOG_DIR=${CRON_LOG_DIR:-$CRON_DIR/logs}
+
+mkdir -p "$CRON_DIR" "$CRON_LOG_DIR"
+
+# We're running inside Ghostty.app to work around macOS permission issues.
+# Consequently, the redirections specified in the plist file don't work.
+exec >>"$CRON_LOG_DIR/daily.log" 2>>"$CRON_LOG_DIR/daily.err"
 
 ssh() {
   # IdentitiesOnly: don't use ssh-agent
@@ -48,7 +53,10 @@ env() {
 bug_archive() {
   # technically, this is set on the server by the environment.
   local remote_dir=Export/bug-archive
-  local local_dir=$CRON_DIR/bug-archive
+
+  # if we name `bug-archive` and it exists, the remote directory will be nested inside it
+  # another option might be to append `/*` to remote_dir
+  local local_dir=$CRON_DIR
 
   ssh bug-archive &&
     scp -r "$remote_dir" "$local_dir" &&
@@ -85,7 +93,7 @@ archive() {
   if cam_archive; then
     status "cam-archive: succeeded."
   else
-    echo "cam-archive: $? exit status from rclone."
+    status "cam-archive: $? exit status from rclone."
   fi
 
   status "Exiting archive."
@@ -103,10 +111,13 @@ shift
 
 case "$cmd" in
 ssh | env | scp | archive | bug_archive | cam_archive)
+  echo
+  status "[$(date +'%F %T')]"
+  status "Running $cmd"
   $cmd "$@"
   ;;
 *)
-  echo "Invalid subcommand '$cmd'" >&2
+  status "Invalid subcommand '$cmd'"
   exit 1
   ;;
 esac

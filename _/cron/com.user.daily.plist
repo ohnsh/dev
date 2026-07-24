@@ -19,6 +19,8 @@
     <dict>
         <key>CRON_DIR</key>
         <string>/Users/jms/_/cron</string>
+        <key>CRON_LOG_DIR</key>
+        <string>/Users/jms/_/cron/logs</string>
     </dict>
 
     <key>StartCalendarInterval</key>
@@ -36,10 +38,11 @@
     <key>LimitLoadToSessionType</key>
     <string>Aqua</string>
 
-    <key>StandardOutPath</key>
+    <!-- Ineffective now that we're running inside Ghostty.app -->
+    <!-- <key>StandardOutPath</key>
     <string>/Users/jms/_/cron/logs/daily.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/jms/_/cron/logs/daily.err</string>
+    <string>/Users/jms/_/cron/logs/daily.err</string> -->
 </dict>
 </plist>
 
