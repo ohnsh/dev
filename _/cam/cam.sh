@@ -88,6 +88,20 @@ set_codec_opts() {
     esac
   fi
 
+  local rtsp_in=$1
+  local codec_in
+  codec_in=$(
+    ffprobe -v error \
+      -select_streams v:0 \
+      -show_entries stream=codec_name \
+      -of default=noprint_wrappers=1:nokey=1 \
+      "$rtsp_in"
+  )
+
+  if [[ $codec_in == "hevc" ]]; then
+    echo "H.265 detected in RTSP stream; adding hvc1 tag to recorded files" >&2
+    codec_opts+=(-tag:v hvc1)
+  fi
 }
 
 # Combine Thingino video with high-quality audio from macOS Pulseaudio server, recording
@@ -113,7 +127,7 @@ record_combined() {
 record() {
   local -a seg_opts codec_opts
   set_seg_opts
-  set_codec_opts
+  set_codec_opts "$rtsp_url"
 
   $ffmpeg -i "$rtsp_url" \
     "${codec_opts[@]}" \
