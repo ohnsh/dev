@@ -12,6 +12,10 @@ mkdir -p "$CRON_DIR" "$CRON_LOG_DIR"
 # Consequently, the redirections specified in the plist file don't work.
 exec >>"$CRON_LOG_DIR/daily.log" 2>>"$CRON_LOG_DIR/daily.err"
 
+ssh_user=jms
+ssh_host=box.local
+ssh_script=remote.sh
+
 ssh() {
   # IdentitiesOnly: don't use ssh-agent
   # BatchMode: don't prompt for password
@@ -24,8 +28,8 @@ ssh() {
     -o IdentitiesOnly=yes \
     -o BatchMode=yes \
     -o StrictHostKeyChecking=accept-new \
-    jms@box.local \
-    remote.sh "$@"
+    "$ssh_user@$ssh_host" \
+    "$ssh_script" "$@"
 }
 
 scp() {
@@ -34,8 +38,15 @@ scp() {
     recurse=1
     shift
   fi
-  local remote=$1
-  local loc=$2
+  local remote_path=$1
+  local local_path=$2
+
+  # if [[ \
+  #   -n $recurse \
+  #   && "$(basename $remote_path)" == "$(basename $local_path)" \
+  #   && -d $local_path \
+  # ]]
+  # Something like this to detect whether final segment should be stripped from dest
 
   command scp \
     -F /dev/null \
@@ -44,7 +55,7 @@ scp() {
     -o BatchMode=yes \
     -o StrictHostKeyChecking=accept-new \
     ${recurse:+-r} \
-    "jms@box.local:$remote" "$loc"
+    "$ssh_user@$ssh_host:$remote_path" "$local_path"
 }
 
 env() {
@@ -55,7 +66,7 @@ bug_archive() {
   # technically, this is set on the server by the environment.
   local remote_dir=Export/bug-archive
 
-  # if we name `bug-archive` and it exists, the remote directory will be nested inside it.
+  # if we name `bug-archive` and it exists, the copied directory will be nested inside it.
   # normalize trailing slash (one is added on the command line)
   # another option might be to append `/*` to remote_dir
   local local_dir=${CRON_DIR%/}
@@ -70,12 +81,12 @@ bug_archive() {
 }
 
 cam_archive() {
-  # technically, this is set on the server by the environment.
+  # technically, this is set in the server environment.
   local remote_dir=Export/cam-archive
   local local_dir=$CRON_DIR/cam-archive
 
   # Now uses same SSH key and SFTP backend as scp.
-  rclone move -P "box:$remote_dir" "$local_dir"
+  rclone move "box:$remote_dir" "$local_dir"
 }
 
 script_name=$(basename "$0")
