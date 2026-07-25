@@ -847,11 +847,11 @@ paths:
       ffmpeg -hide_banner
       -i rtsp://localhost:$RTSP_PORT/$G1
       -f pulse -i "default"
-      -filter_complex "[1:a]adelay=1000|1000[delayed_audio]"
-      -map 0:v -map "[delayed_audio]"
+      -map 0:v -map "1:a"
       -c:v copy -c:a aac -b:a 64k
       -f rtsp rtsp://localhost:$RTSP_PORT/$MTX_PATH
 
+    # -filter_complex "[1:a]adelay=1000|1000[delayed_audio]"
     # Prior to implementing delay:
     #   -map 0:v -map 1:a
 
