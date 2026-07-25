@@ -246,6 +246,7 @@ playbackTrustedProxies: []
 rtsp: true
 # Enabled RTSP transport protocols. The handshake is always performed with TCP.
 rtspTransports: [udp, multicast, tcp]
+# rtspTransports: [tcp]
 # Use secure protocol variants (RTSPS, SRTP, SRTCP).
 # Available values are "no", "strict", "optional".
 rtspEncryption: "no"
@@ -341,11 +342,12 @@ hlsAlwaysRemux: false
 # * mpegts - uses MPEG-TS segments, for maximum compatibility.
 # * fmp4 - uses fragmented MP4 segments, more efficient.
 # * lowLatency - uses Low-Latency HLS.
-hlsVariant: lowLatency
+hlsVariant: fmp4
 # Number of HLS segments to keep on the server.
 # Segments allow to seek through the stream.
 # Their number doesn't influence latency.
-hlsSegmentCount: 7
+# hlsSegmentCount: 7
+hlsSegmentCount: 20
 # Minimum duration of each segment.
 # A player usually puts 3 segments in a buffer before reproducing the stream.
 # The final segment duration is also influenced by the interval between IDR frames,
@@ -786,7 +788,8 @@ pathDefaults:
   # * RTSP_PORT: RTSP server port
   # * G1, G2, ...: regular expression groups, if path name is
   #   a regular expression.
-  runOnRead:
+  runOnRead: curl -fsSL http://localhost:4100/priv/hook?path=$MTX_PATH&reader_type=$MTX_READER_TYPE&reader_id=$MTX_READER_ID
+
   # Restart the command if it exits.
   runOnReadRestart: false
   # Command to run when a client stops reading.
@@ -846,12 +849,13 @@ paths:
     runOnDemand: >
       ffmpeg -hide_banner
       -i rtsp://localhost:$RTSP_PORT/$G1
-      -f pulse -i "default"
-      -map 0:v -map "1:a"
+      -f pulse -i default
+      -filter_complex "[1:a]adelay=1000|1000[delayed_audio]"
+      -map 0:v -map "[delayed_audio]"
       -c:v copy -c:a aac -b:a 64k
-      -f rtsp rtsp://localhost:$RTSP_PORT/$MTX_PATH
+      -f rtsp -pkt_size 1440 rtsp://localhost:$RTSP_PORT/$MTX_PATH
 
-    # -filter_complex "[1:a]adelay=1000|1000[delayed_audio]"
+    # -af "aresample=async=1:first_pts=0"
     # Prior to implementing delay:
     #   -map 0:v -map 1:a
 
