@@ -6,12 +6,6 @@
 CRON_DIR=${CRON_DIR:-$HOME/_/cron}
 CRON_LOG_DIR=${CRON_LOG_DIR:-$CRON_DIR/logs}
 
-mkdir -p "$CRON_DIR" "$CRON_LOG_DIR"
-
-# We're running inside Ghostty.app to work around macOS permission issues.
-# Consequently, the redirections specified in the plist file don't work.
-exec >>"$CRON_LOG_DIR/daily.log" 2>>"$CRON_LOG_DIR/daily.err"
-
 ssh_user=jms
 ssh_host=box.local
 ssh_script=remote.sh
@@ -112,25 +106,34 @@ archive() {
   status "Exiting archive."
 }
 
-# launchd runs jobs in a nearly-empty environment
-if [[ -z $PROFILE ]]; then
-  export PROFILE=$HOME/.bash_profile
-  . "$PROFILE"
-fi
+main() {
+  # launchd runs jobs in a nearly-empty environment
+  if [[ -z $PROFILE ]]; then
+    export PROFILE=$HOME/.bash_profile
+    . "$PROFILE"
+  fi
 
-cmd=${1:-archive}
-cmd=${cmd//-/_}
-shift
+  cmd=${1:-archive}
+  cmd=${cmd//-/_}
+  shift
 
-case "$cmd" in
-ssh | env | scp | archive | bug_archive | cam_archive)
-  echo
-  status "[$(date +'%F %T')]"
-  status "Running $cmd"
-  $cmd "$@"
-  ;;
-*)
-  status "Invalid subcommand '$cmd'"
-  exit 1
-  ;;
-esac
+  case "$cmd" in
+  ssh | env | scp | archive | bug_archive | cam_archive)
+    echo
+    status "[$(date +'%F %T')]"
+    status "Running $cmd"
+    $cmd "$@"
+    ;;
+  *)
+    status "Invalid subcommand '$cmd'"
+    exit 1
+    ;;
+  esac
+}
+
+mkdir -p "$CRON_DIR" "$CRON_LOG_DIR"
+
+# We're running inside Ghostty.app to work around macOS permission issues.
+# Consequently, the redirections specified in the plist file don't work.
+main "$@" 2>&1 | tee -a "$CRON_LOG_DIR/daily.log"
+# exec >>"$CRON_LOG_DIR/daily.log" 2>>"$CRON_LOG_DIR/daily.err"
