@@ -788,13 +788,13 @@ pathDefaults:
   # * RTSP_PORT: RTSP server port
   # * G1, G2, ...: regular expression groups, if path name is
   #   a regular expression.
-  runOnRead: curl -fsSL http://localhost:4100/priv/hook?path=$MTX_PATH&reader_type=$MTX_READER_TYPE&reader_id=$MTX_READER_ID
+  runOnRead: curl -fsSL http://localhost:4100/priv/hook?event=read&path=$MTX_PATH&reader_type=$MTX_READER_TYPE&reader_id=$MTX_READER_ID
 
   # Restart the command if it exits.
   runOnReadRestart: false
   # Command to run when a client stops reading.
   # Environment variables are the same as runOnRead.
-  runOnUnread:
+  runOnUnread: curl -fsSL http://localhost:4100/priv/hook?event=close&path=$MTX_PATH&reader_type=$MTX_READER_TYPE&reader_id=$MTX_READER_ID
 
   # Command to run when a recording segment is created.
   # The following environment variables are available:
