@@ -58,7 +58,12 @@ get_yt_url() {
 
 # ffmpeg options for recording to strftime-named segments on disk.
 set_seg_opts() {
+  if ! declare -p seg_opts &>/dev/null; then
+    echo "seg_opts array must be in scope when calling set_seg_opts" >&2
+    return 1
+  fi
   local seg_length=${1:-300} # Default 5 mins
+
   seg_opts=(
     -f segment -segment_time "$seg_length"
     -reset_timestamps 1 -segment_atclocktime 1
@@ -70,6 +75,10 @@ set_seg_opts() {
 # If this is a Thingino source, clean up audio by re-encoding with the same
 # ultra-low parameters as the source (I've seen YouTube reject it otherwise).
 set_codec_opts() {
+  if ! declare -p codec_opts &>/dev/null; then
+    echo "codec_opts array must be in scope when calling set_codec_opts" >&2
+    return 1
+  fi
   local plain_codec_opts=(-c copy)
   local thingino_codec_opts=(-c:v copy -c:a aac -ar 16k -b:a 32k)
 
@@ -104,6 +113,15 @@ set_codec_opts() {
   fi
 }
 
+set_metadata_opts() {
+  if ! declare -p metadata_opts &>/dev/null; then
+    echo "metadata_opts array must be in scope when calling set_metadata_opts" >&2
+    return 1
+  fi
+
+  metadata_opts=(-metadata "creation_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")")
+}
+
 # Combine Thingino video with high-quality audio from macOS Pulseaudio server, recording
 # the result to disk. This functionality is now baked directly into MediaMTX paths with
 # `-patch` suffix
@@ -125,13 +143,15 @@ record_combined() {
 }
 
 record() {
-  local -a seg_opts codec_opts
+  local -a seg_opts codec_opts metadata_opts
   set_seg_opts
   set_codec_opts "$rtsp_url"
+  set_metadata_opts
 
   $ffmpeg -i "$rtsp_url" \
     "${codec_opts[@]}" \
     "${seg_opts[@]}" \
+    "${metadata_opts[@]}" \
     "$CAM_DIR/$seg_name"
 }
 
