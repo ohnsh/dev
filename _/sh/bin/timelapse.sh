@@ -19,7 +19,16 @@ timelapse_vtb() {
   local q_opts=(-q:v 60)
   # local q_opts=(-b:v 1M)
 
-  $ffmpeg -i "$1" \
+  # -hwaccel means hardware decoding
+  # -hwaccel_output_format is to ensure that the frames stay on the GPU for the encoder.
+  #
+  # unfortunately, the filters (setpts, fps) probably run in software and require
+  # downloading frames to the CPU. I don't yet know a way around it, but one must exist
+  # because the filters are merely rewriting timestamps and dropping frames.
+  $ffmpeg \
+    -hwaccel videotoolbox \
+    -hwaccel_output_format videotoolbox_vld \
+    -i "$1" \
     -vf "$tl_vf" \
     -map 0:v \
     -c:v hevc_videotoolbox \
@@ -39,6 +48,7 @@ timelapse_libx265() {
 }
 
 # Intel VAAPI hardware acceleration using quality parameter
+# See comments in `timelapse_vtb` regarding hardware acceleration; the same applies here.
 timelapse_vaapi() {
   # local q_opts=(-b:v 3M)
   local q_opts=(-qp 28)
