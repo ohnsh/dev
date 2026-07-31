@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-# default speed 10x.
-TL_RATE=${TL_RATE:-10}
+# default speed 8x.
+TL_RATE=${TL_RATE:-8}
 
-# default strobe effect: 2 fps
-TL_FPS=${TL_FPS:-2}
+# default strobe effect: 4 fps
+# (1 frame every 2 real seconds at 8x)
+TL_FPS=${TL_FPS:-4}
 [[ TL_FPS -eq 0 ]] && TL_FPS=
 
 # could potentially use an artificially high input `-r` to compress time
