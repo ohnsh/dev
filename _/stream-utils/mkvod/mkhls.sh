@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-script_dir=$(dirname "$(which "$0" || echo "$0")")
+script_dir=$(dirname "${BASH_SOURCE[0]}")
 . "$script_dir/lib.sh"
 
 hls_copy() {

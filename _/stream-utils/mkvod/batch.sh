@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR=$(dirname "$(which "$0" || echo "$0")")
+# if script was executed from PATH, the full path will be in $0
+SCRIPT_DIR=$(dirname "$0")
 
 process_dir() {
     local dir=$1

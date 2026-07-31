@@ -15,8 +15,9 @@ find_vids() {
 _probe_vid() {
     local file=$1
     local width height nb_frames duration rotation
+    local r_frame_rate bit_rate pix_fmt
     local color_space color_transfer color_primaries
-    local ENTRIES=stream=width,height,nb_frames,duration,color_space,color_transfer,color_primaries
+    local ENTRIES=stream=width,height,nb_frames,duration,r_frame_rate,bit_rate,pix_fmt,color_space,color_transfer,color_primaries
     ENTRIES="$ENTRIES:stream_side_data=rotation"
     (
         eval "$(
@@ -31,6 +32,9 @@ _probe_vid() {
         echo "NB_FRAMES=$nb_frames"
         echo "DURATION=$duration"
         echo "ROTATION=$rotation"
+        echo "FRAME_RATE=$r_frame_rate"
+        echo "BIT_RATE=$bit_rate"
+        echo "PIX_FMT=$pix_fmt"
         echo "COLOR_SPACE=$color_space"
         echo "COLOR_TRANSFER=$color_transfer"
         echo "COLOR_PRIMARIES=$color_primaries"
