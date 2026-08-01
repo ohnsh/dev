@@ -16,43 +16,20 @@ test_audio() {
 # segment time constraint.
 # ffmpeg -i in.mkv -c:v h264 -flags +cgop -g 30 -hls_time 1 out.m3u8
 #
-# +cgop is libavcodec-specific. For hevc_videotoolbox, Gemini suggests (with `-forced-idr`
-# being critical):
-#
-# ffmpeg -i input.mp4 \
-# -c:v hevc_videotoolbox \
-# -g 60 \
-# -forced-idr 1 \
-# -f hls -hls_time 2 -hls_playlist_type vod output.m3u8
-#
-# For hevc_vaapi:
-#
-# ffmpeg -vaapi_device /dev/dri/renderD128 -i input.mp4 \
-# -vf "format=nv12,hwupload" \
-# -c:v hevc_vaapi \
-# -g 60 -keyint_min 60 \
-# -sc_threshold 0 \
-# -f hls -hls_time 2 -hls_playlist_type vod output.m3u8
+# +cgop is libavcodec-specific. For hevc_videotoolbox, Gemini suggests `-forced-idr 1`
 #
 # In any case, segment duration and GOP must agree (segment duration should be a multiple
 # of GOP/framerate)
 
-hls_vaapi() {
-  if ! declare -p out_dir in_opts has_audio FRAME_RATE _720p &>/dev/null; then
-    echo "hls_vaapi: out_dir, in_opts, has_audio, FRAME_RATE, and _720p must be set by caller and in-scope" >&2
+check_opts() {
+  if ! declare -p out_dir in_opts audio_opts gop seg_length _720p &>/dev/null; then
+    echo "$1: out_dir, in_opts, audio_opts, gop, seg_length, and _720p must be set by caller and in-scope" >&2
     return 1
   fi
+}
 
-  local fr=${FRAME_RATE%/*}
-  local seg_length=2
-  local gop=$((fr * seg_length))
-  echo "hls_vaapi: using calculated GOP of $gop frames (${seg_length}s @ $fr fps)" >&2
-
-  [[ -z $has_audio ]] && echo "hls_vaapi: no audio detected" >&2
-
-  local sub_dir=720p-hevc
-  mkdir -p "$out_dir/$sub_dir"
-
+hls_vaapi() {
+  check_opts "hls_vaapi" || exit 1
   # -rc_mode CQP -qp [1-51] # 20-23: excellent; 24-26: baseline
   # -rc_mode VBR -b:v 4M -maxrate:v 5M -bufsize:v 10M
   ffmpeg -v warning \
@@ -62,14 +39,34 @@ hls_vaapi() {
     "${in_opts[@]}" \
     -vf "scale_vaapi=$_720p" \
     -c:v hevc_vaapi \
-    ${has_audio:+-c:a aac -b:a 128k -ac 2} \
+    "${audio_opts[@]}" \
     -tag:v hvc1 \
     -g "$gop" \
     -hls_time "$seg_length" \
     -hls_playlist_type vod \
     -hls_segment_type fmp4 \
-    -hls_segment_filename "$out_dir/$sub_dir/seg_%03d.m4s" \
-    -f hls "$out_dir/$sub_dir/index.m3u8"
+    -hls_segment_filename "$out_dir/seg_%03d.m4s" \
+    -f hls "$out_dir/index.m3u8"
+}
+
+hls_vtb() {
+  check_opts "hls_vtb" || exit 1
+  # local q_opts=(-q:v 60)
+  # local q_opts=(-b:v 1M)
+  ffmpeg -v warning \
+    -hwaccel videotoolbox \
+    -hwaccel_output_format videotoolbox_vld \
+    "${in_opts[@]}" \
+    -vf "scale_vt=$_720p" \
+    -c:v hevc_videotoolbox \
+    "${audio_opts[@]}" \
+    -tag:v hvc1 \
+    -g "$gop" \
+    -hls_time "$seg_length" \
+    -hls_playlist_type vod \
+    -hls_segment_type fmp4 \
+    -hls_segment_filename "$out_dir/seg_%03d.m4s" \
+    -f hls "$out_dir/index.m3u8"
 }
 
 hls_xcode_hw_hevc() {
@@ -87,6 +84,24 @@ hls_xcode_hw_hevc() {
     -f hls "$_outdir/playlist.m3u8"
 }
 
+hls_libx265() {
+  echo "hls_libx265: UNIMPLEMENTED" >&2
+  exit 1
+}
+
+hw_detect() {
+  if ffmpeg -v error -encoders | grep -q hevc_videotoolbox; then
+    echo "Apple Silicon detected; using hevc_videotoolbox encoder." >&2
+    hls=hls_vtb
+  elif ffmpeg -v error -encoders | grep -q hevc_vaapi; then
+    echo "Intel VAAPI platform detected; using hevc_vaapi encoder." >&2
+    hls=hls_vaapi
+  else
+    echo "No hardware acceleration detected; using default libx265 encoder." >&2
+    hls=hls_libx265
+  fi
+}
+
 pre_process() {
   if [ -n "$PORTRAIT" ]; then
     _1080p=1080:-2
@@ -100,20 +115,34 @@ pre_process() {
 }
 
 concat() {
-  local pl first out_dir has_audio
-  local -a files in_opts
+  local pl out_dir count
 
-  if [[ $1 != '-o' ]]; then
+  while [[ $1 == -? ]]; do
+    case "$1" in
+    -o)
+      out_dir=$2
+      shift 2
+      ;;
+    -n)
+      count=$2
+      shift 2
+      ;;
+    *)
+      echo "usage: $0 concat -o OUT_DIR [FILES...|IN_DIR]" >&2
+      exit 1
+      ;;
+    esac
+  done
+
+  if [[ -z $out_dir ]]; then
     echo "usage: $0 concat -o OUT_DIR [FILES...|IN_DIR]" >&2
     exit 1
   fi
-
-  out_dir=${2%/}
-  shift 2
+  out_dir=${out_dir%/}
 
   if [[ $# -eq 1 && -d "$1" ]]; then
-    files=("$1"/*)
-    first=$files
+    local files=("$1"/*)
+    local first=${files[0]}
 
     if [[ ! -f "$first" ]]; then
       echo "error: $first doesn't exist." >&2
@@ -128,28 +157,55 @@ concat() {
     echo "using video parameters from $(basename "$first") $(get_stats)" >&2
     pre_process
 
-    pl=$(_playlist "${files[@]}")
+    local fr=${FRAME_RATE%/*}
+    local seg_length=2
+    local gop=$((fr * seg_length))
+    echo "concat: using calculated GOP of $gop frames (${seg_length}s @ $fr fps)" >&2
 
+    local audio_opts=()
     if test_audio "$first" | grep audio; then
-      has_audio=1
+      audio_opts=(-c:a aac -b:a 128k -ac 2)
+    else
+      echo "concat: no audio detected" >&2
     fi
-    in_opts=(-f concat -safe 0 -i "$pl")
-    out_dir=$out_dir/$(basename "$first").hls
+
+    # list the first $count files, defaulting to all if $count is empty
+    pl=$(_playlist "${files[@]:0:${count:-${#files[@]}}}")
+
+    local in_opts=(-f concat -safe 0 -i "$pl")
+    # out_dir=$out_dir/$(basename "$first").hls
+    out_dir=${out_dir}/720p-hevc
     mkdir -p "$out_dir"
 
-    hls_vaapi
+    hw_detect
+    $hls
   else
     pl=$(_playlist "$@")
   fi
 
-  [[ -f "$pl" ]] && rm -f "$pl"
+  if [[ -f "$pl" ]]; then
+    rm -f "$pl"
+  fi
 }
 
+# alternate implementation, letting `mktemp` choose the name
 _playlist() {
   local tmp
   tmp=$(mktemp -p .)
   printf "file '%s'\n" "$@" >"$tmp"
   echo "$tmp"
+}
+
+pltmp=.playlist.txt
+mk_playlist() {
+  printf "file '%s'\n" "$@" >"$pltmp"
+  echo "$pltmp"
+}
+
+rm_playlist() {
+  if [[ -f "$pltmp" ]]; then
+    rm -f "$pltmp"
+  fi
 }
 
 cmd=$1
