@@ -6,13 +6,14 @@ services:
     network_mode: host
     user: $UID:$GID
     tty: true
-    # stdin_open: true
+    stdin_open: true
     environment:
       - PULSE_SERVER
       - TZ
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
-      - $HOME/Export/cam:/recordings
+      - $HOME/Export/cam-proxy/recordings:/recordings
+      - $HOME/Export/cam-proxy/snapshots:/snapshots
     extra_hosts:
       - mak.local:$MAK_LOCAL_IP
       - ing-wuuk.local:$WUUK_LOCAL_IP
