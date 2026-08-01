@@ -50,7 +50,7 @@ mkdir -p "$BUGDIR"
 
 host=${1:-mak.local}
 # override PULSE_SERVER if an explicit host is passed.
-if [[ -z $PULSE_SERVER ]] || [[ -n $1 ]]; then
+if [[ -z $PULSE_SERVER || -n $1 ]]; then
   PULSE_SERVER="tcp:$(maybe_resolve "$host"):4713"
 fi
 
