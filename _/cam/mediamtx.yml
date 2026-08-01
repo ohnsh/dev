@@ -772,17 +772,20 @@ pathDefaults:
   # * G1, G2, ...: regular expression groups, if path name is
   #   a regular expression.
 
-  runOnAvailable: |
-    sh -c "
-    echo RUNNING SNAPSHOT THING
-    while true; do
-      mkdir -p $(dirname snapshots/$MTX_PATH)
-      ffmpeg -v quiet -i rtsp://localhost:8554/$MTX_PATH -frames:v 1 -update true -y snapshots/$MTX_PATH.jpg
-      sleep 10
-    done"
+  # Played with using this hook for snapshots, but using Thingino's snapshot endpoint is
+  # a much better option. Allows on-demand sources and doesn't require RTSP, nor waiting
+  # for keyframes.
+  runOnAvailable:
+  # sh -c "
+  # echo RUNNING SNAPSHOT THING
+  # while true; do
+  #   mkdir -p $(dirname snapshots/$MTX_PATH)
+  #   ffmpeg -v quiet -i rtsp://localhost:8554/$MTX_PATH -frames:v 1 -update true -y snapshots/$MTX_PATH.jpg
+  #   sleep 10
+  # done"
 
   # Restart the command if it exits.
-  runOnAvailableRestart: true
+  runOnAvailableRestart: false
   # Command to run when the stream is not available anymore.
   # Environment variables are the same as runOnReady.
   runOnUnavailable:
@@ -845,7 +848,7 @@ paths:
 
   wuuk:
     source: rtsp://thingino:thingino@ing-wuuk.local:554/ch0
-    sourceOnDemand: no
+    sourceOnDemand: yes
     record: no
     recordPath: /recordings/%path_%Y%m%d_%H%M%S
     recordFormat: fmp4

@@ -13,7 +13,7 @@ services:
     volumes:
       - ./mediamtx.yml:/mediamtx.yml:ro
       - $HOME/Export/cam-proxy/recordings:/recordings
-      - $HOME/Export/cam-proxy/snapshots:/snapshots
+      # - $HOME/Export/cam-proxy/snapshots:/snapshots
     extra_hosts:
       - mak.local:$MAK_LOCAL_IP
       - ing-wuuk.local:$WUUK_LOCAL_IP
