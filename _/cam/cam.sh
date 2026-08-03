@@ -183,7 +183,7 @@ relay() {
     -f flv "$yt_url"
 }
 
-CAM_DIR=${CAM_DIR:-$HOME/Export/cam}
+CAM_DIR=${CAM_DIR:-$HOME/Export/cam/recordings}
 mkdir -p "$CAM_DIR"
 
 script_dir=$(dirname "$0")

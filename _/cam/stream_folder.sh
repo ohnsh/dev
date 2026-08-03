@@ -8,33 +8,6 @@ script_dir=$(dirname "$0")
   exit 1
 }
 
-redact_tty() {
-  # This is mostly academic; I don't care much if the stream key is logged.
-  # But I am screen-recording the output at times, so there is some logic to redacting it.
-  local pfx="youtube\.com\/live2\/"
-  # macOS script options are not compatible with alpine/util-linux script.
-  # The awk script is Gemini's suggestion to handle ffmpeg's tty-connected log output
-  # (among other issues, filled with \r instead of \n) in a graceful and unbuffered way.
-  # Previously, I used `sed -u "s/${pfx}.*/${pfx}[redacted]/g"`.
-  script -q /dev/null -- "$@" |
-    awk -f <(
-      cat <<EOF
-    BEGIN {
-        RS = "[\r\n]"
-    }
-    {
-        gsub(/${pfx}.*/, "[REDACTED]")
-
-        # Print the line and manually append the matched separator (CR or LF)
-        printf "%s%s", \$0, RT
-        fflush()
-    }
-EOF
-    )
-
-  return "${PIPESTATUS[0]}"
-}
-
 wait_folder() {
   local in_dir=$1
   local min_ready=${2:-2}
@@ -126,7 +99,7 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
 fi
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
-STREAM_DIR=${1:-${STREAM_DIR:-$HOME/Export/cam}}
-STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-${STREAM_DIR}-archive}}
+STREAM_DIR=${1:-${STREAM_DIR:-$HOME/Export/cam-proxy/recordings}}
+STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-${STREAM_DIR%/*}/archive}}
 
 stream_folder

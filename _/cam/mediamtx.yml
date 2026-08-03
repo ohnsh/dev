@@ -865,8 +865,7 @@ paths:
     source: rtsp://thingino:thingino@ing-wuuk.local:554/ch0
     sourceOnDemand: yes
 
-  "~^(wuuk|wyze1)-patch":
-    record: yes
+  "~^(wuuk|wyze1)-patch$":
     runOnDemand: >
       ffmpeg -v warning
       -i rtsp://localhost:$RTSP_PORT/$G1
@@ -875,6 +874,19 @@ paths:
       -map 0:v -map "[delayed_audio]"
       -c:v copy -c:a aac -b:a 64k
       -f rtsp -pkt_size 1440 rtsp://localhost:$RTSP_PORT/$MTX_PATH
+
+  # regexes won't work because these need to be persistent paths in the control API. Now,
+  # recording can be started or stopped by making a PATCH call to the API that switches
+  # `sourceOnDemand` off or on, respectively.
+  "wuuk-patch-rec":
+    source: rtsp://localhost:8554/wuuk-patch
+    sourceOnDemand: yes
+    record: yes
+
+  "wyze1-patch-rec":
+    source: rtsp://localhost:8554/wyze1-patch
+    sourceOnDemand: yes
+    record: yes
 
     # -af "aresample=async=1:first_pts=0"
     # Prior to implementing delay:

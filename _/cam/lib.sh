@@ -69,3 +69,30 @@ get_host_mappings() {
 
   done
 }
+
+redact_tty() {
+  # This is mostly academic; I don't care much if the stream key is logged.
+  # But I am screen-recording the output at times, so there is some logic to redacting it.
+  local pfx="youtube\.com\/live2\/"
+  # macOS script options are not compatible with alpine/util-linux script.
+  # The awk script is Gemini's suggestion to handle ffmpeg's tty-connected log output
+  # (among other issues, filled with \r instead of \n) in a graceful and unbuffered way.
+  # Previously, I used `sed -u "s/${pfx}.*/${pfx}[redacted]/g"`.
+  script -q /dev/null -- "$@" |
+    awk -f <(
+      cat <<EOF
+    BEGIN {
+        RS = "[\r\n]"
+    }
+    {
+        gsub(/${pfx}.*/, "[REDACTED]")
+
+        # Print the line and manually append the matched separator (CR or LF)
+        printf "%s%s", \$0, RT
+        fflush()
+    }
+EOF
+    )
+
+  return "${PIPESTATUS[0]}"
+}
