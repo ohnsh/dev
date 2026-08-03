@@ -875,9 +875,9 @@ paths:
       -c:v copy -c:a aac -b:a 64k
       -f rtsp -pkt_size 1440 rtsp://localhost:$RTSP_PORT/$MTX_PATH
 
-  # regexes won't work because these need to be persistent paths in the control API. Now,
-  # recording can be started or stopped by making a PATCH call to the API that switches
-  # `sourceOnDemand` off or on, respectively.
+  # regexes won't work because these need to be persistent paths in the control API.
+  # The idea: recording can be started or stopped by calling PATCH /v3/config/patch/{cam}
+  # and turning `sourceOnDemand` off or on, respectively.
   "wuuk-patch-rec":
     source: rtsp://localhost:8554/wuuk-patch
     sourceOnDemand: yes

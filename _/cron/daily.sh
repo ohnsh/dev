@@ -76,7 +76,7 @@ bug_archive() {
 
 cam_archive() {
   # technically, this is set in the server environment.
-  local remote_dir=Export/cam-archive
+  local remote_dir=Export/cam-proxy/archive
   local local_dir=$CRON_DIR/cam-archive
 
   # Now uses same SSH key and SFTP backend as scp.
