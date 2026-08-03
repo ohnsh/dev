@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-ffmpeg="ffmpeg -hide_banner -y"
 script_name=$(basename "$0")
 script_dir=$(dirname "$0")
 
@@ -133,13 +132,14 @@ record_combined() {
   export PULSE_SERVER
   echo "Recording audio from server: $PULSE_SERVER" >&2
 
-  $ffmpeg -i "$rtsp_url" \
+  ffmpeg -v warning -y \
+    -i "$rtsp_url" \
     -f pulse -i "default" \
     -filter_complex "[1:a]adelay=1000|1000[delayed_audio]" \
     -map 0:v -map "[delayed_audio]" \
     -c:v copy -c:a aac -b:a 64k \
     "${seg_opts[@]}" \
-    "$CAM_DIR/$seg_name"
+    "$CAM_DIR/$cam/$seg_name"
 }
 
 record() {
@@ -148,11 +148,12 @@ record() {
   set_codec_opts "$rtsp_url"
   set_metadata_opts
 
-  $ffmpeg -i "$rtsp_url" \
+  ffmpeg -v warning -y \
+    -i "$rtsp_url" \
     "${codec_opts[@]}" \
     "${seg_opts[@]}" \
     "${metadata_opts[@]}" \
-    "$CAM_DIR/$seg_name"
+    "$CAM_DIR/$cam/$seg_name"
 }
 
 prepare_broadcast() {
@@ -178,13 +179,13 @@ relay() {
 
   prepare_broadcast || exit 1
 
-  $ffmpeg -i "$rtsp_url" \
+  ffmpeg -v warning \
+    -i "$rtsp_url" \
     "${codec_opts[@]}" \
     -f flv "$yt_url"
 }
 
 CAM_DIR=${CAM_DIR:-$HOME/Export/cam/recordings}
-mkdir -p "$CAM_DIR"
 
 script_dir=$(dirname "$0")
 
@@ -211,8 +212,9 @@ if [[ $(type -t "$cmd") == "function" ]]; then
   echo "RTSP Source: $rtsp_url" >&2
 
   # Changed so that lexical order is chronological order, even when camera switches.
-  seg_name=cam_%Y%m%d_%H%M%S_${cam}.mp4
-  echo "Segment format: $CAM_DIR/$seg_name" >&2
+  seg_name=${cam}_%Y%m%d_%H%M%S.mp4
+  mkdir -p "$CAM_DIR/$cam"
+  echo "Segment format: $CAM_DIR/$cam/$seg_name" >&2
 
   if ! $cmd; then
     fstatus "$cmd exited with error"

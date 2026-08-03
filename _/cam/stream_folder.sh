@@ -77,7 +77,7 @@ stream_folder() {
       # which could greatly complicate debugging. It was a fun exercise but it
       # probably doesn't belong in production.
       ffmpeg \
-        -hide_banner \
+        -v warning \
         -readrate 1 -readrate_catchup 2 \
         -i "$movie" \
         -c copy \
@@ -99,7 +99,17 @@ if [[ -z "$YT_STREAM_KEY" ]]; then
 fi
 YT_URL=rtmp://a.rtmp.youtube.com/live2/$YT_STREAM_KEY
 
-STREAM_DIR=${1:-${STREAM_DIR:-$HOME/Export/cam-proxy/recordings}}
-STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-${STREAM_DIR%/*}/archive}}
+default_base=$HOME/Export/cam-proxy
+
+STREAM_DIR=${1:-${STREAM_DIR:-$default_base/recordings}}
+STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-$default_base/archive}}
+
+# Allow a 'bare specifier' that maps to subdirectories of the default dirs.
+# E.g. `stream_folder.sh wuuk` will stream from $default_base/recordings/wuuk to
+# $default_base/archive/wuuk
+if [[ $STREAM_DIR != */* ]]; then
+  STREAM_DIR=$default_base/recordings/$STREAM_DIR
+  STREAM_ARCHIVE_DIR=$default_base/archive/$STREAM_DIR
+fi
 
 stream_folder
