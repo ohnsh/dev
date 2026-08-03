@@ -25,7 +25,7 @@ bug_ffmpeg_pulse() {
   # Front_Left__Front_Right.2
   #
   # Instead, we'll use the default source, which must be configured on the server.
-  exec ffmpeg -hide_banner -y \
+  exec ffmpeg -v warning -y \
     -f pulse -i "default" \
     "${codec[@]}" \
     -f segment -segment_time "$seg_length" \

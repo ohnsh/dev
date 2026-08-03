@@ -776,7 +776,6 @@ pathDefaults:
   # for keyframes.
   runOnAvailable:
   # sh -c "
-  # echo RUNNING SNAPSHOT THING
   # while true; do
   #   mkdir -p $(dirname snapshots/$MTX_PATH)
   #   ffmpeg -v quiet -i rtsp://localhost:8554/$MTX_PATH -frames:v 1 -update true -y snapshots/$MTX_PATH.jpg
@@ -876,7 +875,7 @@ paths:
 
   "~^(wuuk|wyze1)-patch":
     runOnDemand: >
-      ffmpeg -hide_banner
+      ffmpeg -v warning
       -i rtsp://localhost:$RTSP_PORT/$G1
       -f pulse -i default
       -filter_complex "[1:a]adelay=1000|1000[delayed_audio]"
