@@ -546,7 +546,7 @@ pathDefaults:
   # Extension is added automatically.
   # Available variables are %path (path name), %Y %m %d (year, month, day),
   # %H %M %S (hours, minutes, seconds), %f (microseconds), %z (time zone), %s (unix epoch).
-  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordPath: /recordings/%path_%Y%m%d_%H%M%S
   # Format of recorded segments.
   # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
   recordFormat: fmp4
@@ -554,11 +554,11 @@ pathDefaults:
   # MPEG-TS segments are concatenation of 188-bytes packets, flushed to disk with this period.
   # When a system failure occurs, the last part gets lost.
   # Therefore, the part duration is equal to the RPO (recovery point objective).
-  recordPartDuration: 1s
+  recordPartDuration: 5s
   # This prevents RAM exhaustion.
   recordMaxPartSize: 50M
   # Minimum duration of each segment.
-  recordSegmentDuration: 1h
+  recordSegmentDuration: 20m
   # Delete segments after this timespan.
   # Set to 0s to disable automatic deletion.
   recordDeleteAfter: 1d
@@ -860,20 +860,13 @@ paths:
   wyze1:
     source: rtsp://thingino:thingino@ing-wyze-1.local:554/ch0
     sourceOnDemand: yes
-    record: no
 
   wuuk:
     source: rtsp://thingino:thingino@ing-wuuk.local:554/ch0
     sourceOnDemand: yes
-    record: no
-    recordPath: /recordings/%path_%Y%m%d_%H%M%S
-    recordFormat: fmp4
-    recordPartDuration: 5s
-    recordMaxPartSize: 50M
-    recordSegmentDuration: 5m
-    recordDeleteAfter: 1d
 
   "~^(wuuk|wyze1)-patch":
+    record: yes
     runOnDemand: >
       ffmpeg -v warning
       -i rtsp://localhost:$RTSP_PORT/$G1

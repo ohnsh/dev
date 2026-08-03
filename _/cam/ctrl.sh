@@ -2,20 +2,23 @@
 
 base_url=http://localhost:9997/v3
 
-wuuk_auto_on() {
-  _patch '{"sourceOnDemand": false}'
+source_on() {
+  local cam=${1:-wuuk-patch}
+  _patch "$cam" '{"sourceOnDemand": false}'
 }
 
-wuuk_auto_off() {
-  _patch '{"sourceOnDemand": true}'
+source_off() {
+  local cam=${1:-wuuk-patch}
+  _patch "$cam" '{"sourceOnDemand": true}'
 }
 
 _patch() {
-  local json=$1
+  local cam=$1
+  local json=$2
   curl -sS \
     -X PATCH \
     --json "$json" \
-    $base_url/config/paths/patch/wuuk
+    "$base_url/config/paths/patch/$cam"
 }
 
 paths() {
@@ -24,6 +27,15 @@ paths() {
     curl -sS "$base_url/paths/get/$path"
   else
     curl -sS $base_url/paths/list
+  fi
+}
+
+recordings() {
+  local path=$1
+  if [[ -n $path ]]; then
+    curl -sS "$base_url/recordings/get/$path"
+  else
+    curl -sS $base_url/recordings/list
   fi
 }
 
@@ -55,7 +67,7 @@ else
   config [path]
   paths [path]
   status
-  wuuk-auto-on
-  wuuk-auto-off" >&2
+  source-on <path>
+  source-off <path>" >&2
   exit 1
 fi
