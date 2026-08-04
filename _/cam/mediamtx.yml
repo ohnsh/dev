@@ -892,6 +892,9 @@ paths:
   desk:
     record: yes
 
+  quad:
+    record: yes
+
     # -af "aresample=async=1:first_pts=0"
     # Prior to implementing delay:
     #   -map 0:v -map 1:a
