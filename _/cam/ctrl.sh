@@ -3,12 +3,22 @@
 base_url=http://localhost:9997/v3
 
 source_on() {
-  local cam=${1:-wuuk-patch-rec}
+  local cam=$1
+  case "$cam" in
+  wyze1 | wuuk)
+    cam=$cam-patch-rec
+    ;;
+  esac
   _patch "$cam" '{"sourceOnDemand": false}'
 }
 
 source_off() {
-  local cam=${1:-wuuk-patch-rec}
+  local cam=$1
+  case "$cam" in
+  wyze1 | wuuk)
+    cam=$cam-patch-rec
+    ;;
+  esac
   _patch "$cam" '{"sourceOnDemand": true}'
 }
 

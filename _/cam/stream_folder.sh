@@ -115,7 +115,9 @@ if [[ $STREAM_DIR != */* ]]; then
   STREAM_DIR=$default_base/recordings/$cam
 
   if [[ -z $(ls "$STREAM_DIR" 2>/dev/null) ]]; then
-    echo "$STREAM_DIR empty" >&2
+    echo "Directory empty: $STREAM_DIR" >&2
+    echo "Searching for a similar directory to stream instead." >&2
+
     for dir in "$STREAM_DIR"*; do
       if [[ -d $dir && -n $(ls "$dir" 2>/dev/null) ]]; then
         STREAM_DIR=$dir
