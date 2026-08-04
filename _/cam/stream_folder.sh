@@ -20,11 +20,11 @@ wait_folder() {
         continue
       fi
       num_ready=$((num_ready + 1))
-      [[ num_ready -lt 2 ]] || return
+      [[ $num_ready -lt $min_ready ]] || return 0
     done
 
     fstatus "Waiting..."
-    inotifyd - "$in_dir:wy0" | read -r
+    inotifyd - "$in_dir:wy0" | read -r || return 1
     fstatus "Continuing."
   done
 }
@@ -42,7 +42,10 @@ stream_folder() {
   mkdir -p "$out_dir"
 
   # wait until in_dir contains at least 2 files that aren't open for writing.
-  wait_folder "$in_dir" 2
+  wait_folder "$in_dir" 2 || {
+    echo "wait_folder failed" >&2
+    return 1
+  }
   # ensure a broadcast is ready (usually means create one)
   bunx youtube-client broadcast prepare
 
@@ -64,7 +67,7 @@ stream_folder() {
       # inotifyd - "$in_dir:wy0" | read -r
       # fstatus "continuing"
       # continue
-      # 
+      #
       # The non-busybox utility:
       #   inotifywait -m -e close_write --format "%f" "$in_dir" | while read -r movie; ...
     fi
@@ -108,8 +111,24 @@ STREAM_ARCHIVE_DIR=${2:-${STREAM_ARCHIVE_DIR:-$default_base/archive}}
 # E.g. `stream_folder.sh wuuk` will stream from $default_base/recordings/wuuk to
 # $default_base/archive/wuuk
 if [[ $STREAM_DIR != */* ]]; then
-  STREAM_DIR=$default_base/recordings/$STREAM_DIR
-  STREAM_ARCHIVE_DIR=$default_base/archive/$STREAM_DIR
+  cam=$STREAM_DIR
+  STREAM_DIR=$default_base/recordings/$cam
+
+  if [[ -z $(ls "$STREAM_DIR" 2>/dev/null) ]]; then
+    echo "$STREAM_DIR empty" >&2
+    for dir in "$STREAM_DIR"*; do
+      if [[ -d $dir && -n $(ls "$dir" 2>/dev/null) ]]; then
+        STREAM_DIR=$dir
+        cam=$(basename "$STREAM_DIR")
+        break
+      fi
+    done
+  fi
+
+  STREAM_ARCHIVE_DIR=$default_base/archive/$cam
 fi
+
+echo "STREAM_DIR=$STREAM_DIR"
+echo "STREAM_ARCHIVE_DIR=$STREAM_ARCHIVE_DIR"
 
 stream_folder
