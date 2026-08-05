@@ -334,7 +334,9 @@ hlsAllowOrigins: ["*"]
 # IPs or CIDRs of proxies placed before the HLS server.
 # If the server receives a request from one of these entries, IP in logs
 # will be taken from the X-Forwarded-For header.
-hlsTrustedProxies: []
+#
+# Traffic from tunnelnet/cloudflared, from which hls.ohn.sh is exposed publicly
+hlsTrustedProxies: ["172.19.0.0/24", "::ffff:172.19.0.0/120"]
 # By default, HLS is generated only when requested by a user.
 # This option allows to generate it always, avoiding the delay between request and generation.
 hlsAlwaysRemux: false
@@ -399,7 +401,9 @@ webrtcAllowOrigins: ["*"]
 # IPs or CIDRs of proxies placed before the WebRTC server.
 # If the server receives a request from one of these entries, IP in logs
 # will be taken from the X-Forwarded-For header.
-webrtcTrustedProxies: []
+# 
+# Traffic from tunnelnet/cloudflared, from which webrtc.ohn.sh is exposed publicly
+webrtcTrustedProxies: ["172.19.0.0/24", "::ffff:172.19.0.0/120"]
 # Address of a UDP/ICE listener that will receive connections.
 # Use a blank string to disable.
 webrtcLocalUDPAddress: :8189
