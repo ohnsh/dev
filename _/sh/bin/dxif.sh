@@ -86,15 +86,21 @@ move() {
   bug_*.aac | bug_*.opus | bug*.ogg)
     catdir="_bug"
     ;;
-  wuuk_*.mp4 | wuuk-patch_*.mp4)
+  wuuk[_-]*.mp4)
     catdir="_wuuk"
     ;;
-  wyze[0-9]_*.mp4 | wyze[0-9]-patch_*.mp4)
-    catdir="_${bn%%_*}"
-    catdir="${catdir%-patch}"
+  wyze[0-9][_-]*.mp4)
+    catdir="_${bn%%[_-]*}"
+    # catdir="${catdir%-patch}"
     ;;
   cam_*.mp4)
     catdir="_cam"
+    ;;
+  desk_*.mp4)
+    catdir="_desk"
+    ;;
+  quad_*.mp4)
+    catdir="_quad"
     ;;
   esac
 
