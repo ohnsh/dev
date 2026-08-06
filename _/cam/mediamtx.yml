@@ -85,7 +85,13 @@ authInternalUsers:
     # if the IP is localhost.
   - user: any
     pass:
-    ips: ["127.0.0.1", "::1", "172.19.0.3"]
+    ips:
+      - 127.0.0.1
+      - "::1"
+      - 172.19.0.0/24 # tunnelnet, 172.19.0.3 is dashd specifically
+      - 172.23.0.0/24 # prometheus_default
+      - 192.168.1.0/24 # LAN
+      - "fe80::/10" # LAN
     permissions:
       - action: api
       - action: metrics
@@ -171,7 +177,7 @@ apiTrustedProxies: []
 # Global settings -> Metrics server
 
 # Enable the metrics server, which allows to extract Prometheus-compatible metrics.
-metrics: false
+metrics: true
 # Address of the TCP/HTTP listener.
 metricsAddress: :9998
 # Enable HTTPS.
@@ -518,7 +524,8 @@ pathDefaults:
   # readers connected and this amount of time has passed.
   sourceOnDemandCloseAfter: 10s
   # Maximum number of readers. Zero means no limit.
-  maxReaders: 0
+  # 500 response when streaming HLS.
+  maxReaders: 10
   # SRT encryption passphrase required to read from this path.
   srtReadPassphrase:
   # Use absolute timestamp of frames, instead of replacing them with the current time.
