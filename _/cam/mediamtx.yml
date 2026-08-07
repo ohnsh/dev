@@ -225,7 +225,7 @@ pprofTrustedProxies: []
 # Global settings -> Playback server
 
 # Enable the playback server, which allows to download recordings from the server.
-playback: false
+playback: true
 # Address of the TCP/HTTP listener.
 playbackAddress: :9996
 # Enable HTTPS.
@@ -243,7 +243,10 @@ playbackAllowOrigins: ["*"]
 # IPs or CIDRs of proxies placed before the HTTP server.
 # These proxies can use the X-Forwarded-For header to set the real IP of clients,
 # and the X-Forwarded-Proto header to set the original protocol.
-playbackTrustedProxies: []
+#
+# Traffic from tunnelnet/cloudflared, from which webrtc.ohn.sh is exposed publicly
+# (Note: there isn't yet a tunnel endpoint sending traffic to :9996)
+playbackTrustedProxies: ["172.19.0.0/24", "::ffff:172.19.0.0/120"]
 
 ###############################################
 # Global settings -> RTSP server
@@ -557,7 +560,7 @@ pathDefaults:
   # Extension is added automatically.
   # Available variables are %path (path name), %Y %m %d (year, month, day),
   # %H %M %S (hours, minutes, seconds), %f (microseconds), %z (time zone), %s (unix epoch).
-  recordPath: /recordings/%path/%path_%Y%m%d_%H%M%S
+  recordPath: /recordings/%Y-%m-%d/%path/_raw/%path_%Y%m%d_%H%M%S_%f
   # Format of recorded segments.
   # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
   recordFormat: fmp4
