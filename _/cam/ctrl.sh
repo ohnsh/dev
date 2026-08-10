@@ -2,6 +2,10 @@
 
 base_url=http://localhost:9997/v3
 
+list_avail() {
+  paths | jq '.items[] | select(.available == true) | .name'
+}
+
 source_on() {
   local cam=$1
   case "$cam" in
@@ -76,6 +80,7 @@ else
   echo "Valid subcommands:
   config [path]
   paths [path]
+  list-avail
   status
   source-on <path>
   source-off <path>" >&2

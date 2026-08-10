@@ -4,6 +4,9 @@
   "dependencies": {
     "youtube-client": "workspace:*"
   },
+  "bin": {
+    "ctrl.sh": "./ctrl.sh"
+  },
   "scripts": {
     "ensure": "youtube-client broadcast prepare",
     "recent": "youtube-client broadcast"
