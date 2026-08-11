@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-MMTX_API_URL=${MMTX_API_URL:-http://localhost:9997/v3}
+default_url=http://localhost:9997/v3
+if [[ $(hostname) != box* ]]; then
+  default_url=http://box.local:9997/v3
+fi
+MMTX_API_URL=${MMTX_API_URL:-$default_url}
+
 curl="curl -4"
 
 avail() {
