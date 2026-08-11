@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-base_url=http://localhost:9997/v3
+MMTX_API_URL=${MMTX_API_URL:-http://localhost:9997/v3}
 curl="curl -4"
 
-list_avail() {
-  paths | jq '.items[] | select(.available == true) | .name'
+avail() {
+  paths "" | jq '.items[] | select(.available == true) | .name'
 }
 
 source_on() {
@@ -33,55 +33,55 @@ _patch() {
   $curl -sS \
     -X PATCH \
     --json "$json" \
-    "$base_url/config/paths/patch/$cam"
+    "$MMTX_API_URL/config/paths/patch/$cam"
 }
 
 paths() {
   local path=$1
   if [[ -n $path ]]; then
-    $curl -sS "$base_url/paths/get/$path"
+    $curl -sS "$MMTX_API_URL/paths/get/$path"
   else
-    $curl -sS $base_url/paths/list
+    $curl -sS "$MMTX_API_URL/paths/list"
   fi
 }
 
 recordings() {
   local path=$1
   if [[ -n $path ]]; then
-    $curl -sS "$base_url/recordings/get/$path"
+    $curl -sS "$MMTX_API_URL/recordings/get/$path"
   else
-    $curl -sS $base_url/recordings/list
+    $curl -sS "$MMTX_API_URL/recordings/list"
   fi
 }
 
 config() {
   local path=$1
   if [[ -n $path ]]; then
-    $curl -sS "$base_url/config/paths/get/$path" |
+    $curl -sS "$MMTX_API_URL/config/paths/get/$path" |
       jq 'with_entries(select(.key | startswith("rpiCamera") | not))'
   else
-    $curl -sS $base_url/config/paths/list |
+    $curl -sS "$MMTX_API_URL/config/paths/list" |
       jq '.items[] |= with_entries(select(.key | startswith("rpiCamera") | not))'
   fi
 }
 
 status() {
   # not exhaustive
-  $curl -sS $base_url/hlssessions/list
-  $curl -sS $base_url/rtspconns/list
-  $curl -sS $base_url/rtmpconns/list
-  $curl -sS $base_url/webrtcsessions/list
+  $curl -sS "$MMTX_API_URL/hlssessions/list"
+  $curl -sS "$MMTX_API_URL/rtspconns/list"
+  $curl -sS "$MMTX_API_URL/rtmpconns/list"
+  $curl -sS "$MMTX_API_URL/webrtcsessions/list"
 }
 
 cmd=${1//-/_}
 shift
 if [[ $(type -t "$cmd") == function ]]; then
-  $cmd "$@" | jq
+  $cmd "$@" | jq -r
 else
   echo "Valid subcommands:
   config [path]
   paths [path]
-  list-avail
+  avail
   status
   source-on <path>
   source-off <path>" >&2
