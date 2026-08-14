@@ -14,21 +14,31 @@ avail() {
 
 source_on() {
   local cam=$1
-  case "$cam" in
-  wyze1 | wuuk)
-    cam=$cam-patch-rec
-    ;;
-  esac
+  # case "$cam" in
+  # wyze1 | wuuk)
+  #   cam=$cam-patch-rec
+  #   ;;
+  # esac
   _patch "$cam" '{"sourceOnDemand": false}'
+}
+
+record_on() {
+  local cam=$1
+  _patch "$cam" '{"record": true}'
+}
+
+record_off() {
+  local cam=$1
+  _patch "$cam" '{"record": false}'
 }
 
 source_off() {
   local cam=$1
-  case "$cam" in
-  wyze1 | wuuk)
-    cam=$cam-patch-rec
-    ;;
-  esac
+  # case "$cam" in
+  # wyze1 | wuuk)
+  #   cam=$cam-patch-rec
+  #   ;;
+  # esac
   _patch "$cam" '{"sourceOnDemand": true}'
 }
 
@@ -89,6 +99,8 @@ else
   avail
   status
   source-on <path>
-  source-off <path>" >&2
+  source-off <path>
+  record-on <path>
+  record-off <path>" >&2
   exit 1
 fi

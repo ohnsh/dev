@@ -139,7 +139,7 @@ record_combined() {
     -map 0:v -map "[delayed_audio]" \
     -c:v copy -c:a aac -b:a 64k \
     "${seg_opts[@]}" \
-    "$CAM_DIR/$cam/$seg_name"
+    "$CAM_DIR/$seg_name"
 }
 
 record() {
@@ -153,7 +153,7 @@ record() {
     "${codec_opts[@]}" \
     "${seg_opts[@]}" \
     "${metadata_opts[@]}" \
-    "$CAM_DIR/$cam/$seg_name"
+    "$CAM_DIR/$seg_name"
 }
 
 prepare_broadcast() {
@@ -185,7 +185,7 @@ relay() {
     -f flv "$yt_url"
 }
 
-CAM_DIR=${CAM_DIR:-$HOME/Export/cam/recordings}
+CAM_BASE_DIR=${CAM_BASE_DIR:-$HOME/Export/cam-proxy/recordings}
 
 script_dir=$(dirname "$0")
 
@@ -211,10 +211,10 @@ if [[ $(type -t "$cmd") == "function" ]]; then
   rtsp_url=$(get_rtsp_url) || exit 1
   echo "RTSP Source: $rtsp_url" >&2
 
-  # Changed so that lexical order is chronological order, even when camera switches.
+  CAM_DIR=$CAM_BASE_DIR/$(date +%F)/${cam}/_raw
+  mkdir -p "$CAM_DIR"
   seg_name=${cam}_%Y%m%d_%H%M%S.mp4
-  mkdir -p "$CAM_DIR/$cam"
-  echo "Segment format: $CAM_DIR/$cam/$seg_name" >&2
+  echo "Segment format: $CAM_DIR/$seg_name" >&2
 
   if ! $cmd; then
     fstatus "$cmd exited with error"
