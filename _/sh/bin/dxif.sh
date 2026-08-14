@@ -104,15 +104,17 @@ move() {
     ;;
   esac
 
-  dn=$(realpath "$dn")
-  case "$dn/" in
-  */capture/1x1/*)
-    catdir=_capture_1x1
-    ;;
-  */capture/*)
-    catdir=_capture_2x2
-    ;;
-  esac
+  # start sorting into quad instead
+  #
+  # dn=$(realpath "$dn")
+  # case "$dn/" in
+  # */capture/1x1/*)
+  #   catdir=_capture_1x1
+  #   ;;
+  # */capture/*)
+  #   catdir=_capture_2x2
+  #   ;;
+  # esac
 
   if [[ -z $catdir ]]; then
     catdir=_misc
