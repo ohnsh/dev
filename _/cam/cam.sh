@@ -20,15 +20,15 @@ maybe_resolve() {
 }
 
 get_rtsp_url() {
-  local path=$cam addr
-  addr=$(maybe_resolve "$host")
+  local path=$CAM addr
+  addr=$(maybe_resolve "$HOST")
 
   if [[ ${PIPESTATUS[0]} -ne 0 ]] || [[ -z "$addr" ]]; then
-    echo "Error resolving host: $host" >&2
+    echo "Error resolving host: $HOST" >&2
     return 1
   fi
 
-  if [[ $host == ing-*.local ]]; then
+  if [[ $HOST == ing-*.local ]]; then
     echo "rtsp://thingino:thingino@$addr/ch0"
   else
     echo "rtsp://$addr:8554/$path"
@@ -41,10 +41,6 @@ redact_yt_url() {
 }
 
 get_yt_url() {
-  if [[ ! -d $script_dir ]]; then
-    echo "Error: computed script dir doesn't exist: $script_dir" >&2
-    exit 1
-  fi
   [[ -f $script_dir/.env ]] && . "$script_dir/.env"
 
   if [[ -z "$YT_STREAM_KEY" ]]; then
@@ -66,7 +62,7 @@ set_seg_opts() {
   seg_opts=(
     -f segment -segment_time "$seg_length"
     -reset_timestamps 1 -segment_atclocktime 1
-    -movflags frag_keyframe+empty_moov
+    -movflags +hybrid_fragmented
     -strftime 1 -use_wallclock_as_timestamps 1
   )
 }
@@ -81,7 +77,7 @@ set_codec_opts() {
   local plain_codec_opts=(-c copy)
   local thingino_codec_opts=(-c:v copy -c:a aac -ar 16k -b:a 32k)
 
-  if [[ $host == ing-*.local ]]; then
+  if [[ $HOST == ing-*.local ]]; then
     echo "Using codec options for Thingino source" >&2
     codec_opts=("${thingino_codec_opts[@]}")
   else
@@ -128,32 +124,33 @@ record_combined() {
   local -a seg_opts
   set_seg_opts
 
+  # environment variable used by libpulse
   PULSE_SERVER=${PULSE_SERVER:-tcp:$(maybe_resolve "$pulse_host"):4713}
   export PULSE_SERVER
   echo "Recording audio from server: $PULSE_SERVER" >&2
 
   ffmpeg -v warning -y \
-    -i "$rtsp_url" \
+    -i "$RTSP_URL" \
     -f pulse -i "default" \
     -filter_complex "[1:a]adelay=1000|1000[delayed_audio]" \
     -map 0:v -map "[delayed_audio]" \
     -c:v copy -c:a aac -b:a 64k \
     "${seg_opts[@]}" \
-    "$CAM_DIR/$seg_name"
+    "$cam_dir_fmt/$seg_name"
 }
 
 record() {
   local -a seg_opts codec_opts metadata_opts
-  set_seg_opts
-  set_codec_opts "$rtsp_url"
+  set_seg_opts 1200 # 20 min
+  set_codec_opts "$RTSP_URL"
   set_metadata_opts
 
   ffmpeg -v warning -y \
-    -i "$rtsp_url" \
+    -i "$RTSP_URL" \
     "${codec_opts[@]}" \
     "${seg_opts[@]}" \
     "${metadata_opts[@]}" \
-    "$CAM_DIR/$seg_name"
+    "$cam_dir_fmt/$seg_name"
 }
 
 prepare_broadcast() {
@@ -180,46 +177,80 @@ relay() {
   prepare_broadcast || exit 1
 
   ffmpeg -v warning \
-    -i "$rtsp_url" \
+    -i "$RTSP_URL" \
     "${codec_opts[@]}" \
     -f flv "$yt_url"
+}
+
+supervise_record() {
+  local seg_name
+  # path to pass to mkdir
+  local cam_dir=$CAM_BASE_DIR/$(date +%F)/${CAM}/_raw
+  # path to pass to ffmpeg.
+  # it resolves to current date even if recording started on a previous day.
+  local cam_dir_fmt=$CAM_BASE_DIR/%Y-%m-%d/${CAM}/_raw
+
+  while true; do
+    # crucial to prevent infinite loop
+    mkdir -p "$cam_dir" || {
+      fstatus "mkdir failed; exiting."
+      exit 1
+    }
+    seg_name=${CAM}_%Y%m%d_%H%M%S.mp4
+    echo "Segment format: $cam_dir/$seg_name" >&2
+
+    if ! "$CMD"; then
+      status=$?
+      fstatus "$CMD exited with error ($status)"
+
+      cam_dir=$CAM_BASE_DIR/$(date +%F)/${CAM}/_raw
+      if [[ ! -d $cam_dir ]]; then
+        fstatus "Detected date change. Creating $cam_dir and retrying..."
+        # only condition where loop continues
+        continue
+      fi
+      # unknown error; don't try to recover
+      exit $status
+    fi
+    # get out of this loop on success
+    break
+  done
 }
 
 CAM_BASE_DIR=${CAM_BASE_DIR:-$HOME/Export/cam-proxy/recordings}
 
 script_dir=$(dirname "$0")
 
-cmd=${1//-/_}
-host=${2:-localhost}
-cam=$3
+CMD=${1//-/_}
+HOST=${2:-localhost}
+CAM=$3
 pulse_host=mak.local
 
-if [[ $host == ing-*.local ]]; then
-  ing_cam=${host%%.*}
+if [[ $HOST == ing-*.local ]]; then
+  ing_cam=${HOST%%.*}
   ing_cam=${ing_cam#ing-}
   ing_cam=${ing_cam//-/}
-  cam=${cam:-$ing_cam}
-elif [[ -z $cam ]]; then
+  CAM=${CAM:-$ing_cam}
+elif [[ -z $CAM ]]; then
   echo "Assumed MediaMTX source. Must pass path (camera name) as third argument." >&2
   exit 1
 fi
 
-echo "Streaming $cam from $host" >&2
+# Either points to mediamtx or camera/Thingino directly.
+RTSP_URL=$(get_rtsp_url) || exit 1
+echo "RTSP Source: $RTSP_URL" >&2
 
-if [[ $(type -t "$cmd") == "function" ]]; then
-  # Either points to mediamtx or camera/Thingino directly.
-  rtsp_url=$(get_rtsp_url) || exit 1
-  echo "RTSP Source: $rtsp_url" >&2
+echo "Streaming $CAM from $HOST" >&2
 
-  CAM_DIR=$CAM_BASE_DIR/$(date +%F)/${cam}/_raw
-  mkdir -p "$CAM_DIR"
-  seg_name=${cam}_%Y%m%d_%H%M%S.mp4
-  echo "Segment format: $CAM_DIR/$seg_name" >&2
-
-  if ! $cmd; then
-    fstatus "$cmd exited with error"
-  fi
-else
-  echo "$1 not a valid subcommand. Exiting." >&2
+case "$CMD" in
+record*)
+  supervise_record
+  ;;
+relay)
+  relay
+  ;;
+*)
+  echo "Invalid subcommand: $CMD" >&2
   exit 1
-fi
+  ;;
+esac
