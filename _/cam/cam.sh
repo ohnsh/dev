@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
-script_name=$(basename "$0")
-script_dir=$(dirname "$0")
+SCRIPT_DIR=$(dirname "$0")
 
-. "$script_dir/lib.sh" || {
-  echo "Couldn't load required helper $script_dir/lib.sh." >&2
+. "$SCRIPT_DIR/lib.sh" || {
+  echo "Couldn't load required helper $SCRIPT_DIR/lib.sh." >&2
   exit 1
 }
 
@@ -41,7 +40,7 @@ redact_yt_url() {
 }
 
 get_yt_url() {
-  [[ -f $script_dir/.env ]] && . "$script_dir/.env"
+  [[ -f $SCRIPT_DIR/.env ]] && . "$SCRIPT_DIR/.env"
 
   if [[ -z "$YT_STREAM_KEY" ]]; then
     echo "Please provide YT_STREAM_KEY in environment or .env file." >&2
@@ -87,6 +86,7 @@ set_codec_opts() {
       codec_opts=("${thingino_codec_opts[@]}")
       ;;
     *)
+      echo "Assuming clean audio; performing stream copy." >&2
       codec_opts=("${plain_codec_opts[@]}")
       ;;
     esac
@@ -125,7 +125,7 @@ record_combined() {
   set_seg_opts
 
   # environment variable used by libpulse
-  PULSE_SERVER=${PULSE_SERVER:-tcp:$(maybe_resolve "$pulse_host"):4713}
+  PULSE_SERVER=${PULSE_SERVER:-tcp:$(maybe_resolve "$PULSE_HOST"):4713}
   export PULSE_SERVER
   echo "Recording audio from server: $PULSE_SERVER" >&2
 
@@ -220,9 +220,11 @@ supervise_record() {
 init() {
   HOST=${1:-localhost}
   CAM=$2
-  pulse_host=mak.local
 
+  # somewhat obsolete cruft now that I always stream from mediaMTX.
+  # the primary benefit is that the cameras never have more than 1 connection to service.
   if [[ $HOST == ing-*.local ]]; then
+    # infer camera name (for file paths) from camera hostname
     ing_cam=${HOST%%.*}
     ing_cam=${ing_cam#ing-}
     ing_cam=${ing_cam//-/}
@@ -239,7 +241,9 @@ init() {
   echo "Streaming $CAM from $HOST" >&2
 }
 
+# configurable defaults
 CAM_BASE_DIR=${CAM_BASE_DIR:-$HOME/Export/cam-proxy/recordings}
+PULSE_HOST=${PULSE_HOST:-mak.local}
 
 CMD=${1//-/_}
 shift
@@ -254,6 +258,7 @@ relay)
   relay
   ;;
 notify)
+  # test ntfy.sh functionality
   fstatus_notify "$@"
   ;;
 *)
