@@ -201,15 +201,15 @@ supervise_record() {
 
     if ! "$CMD"; then
       status=$?
-      fstatus "$CMD exited with error ($status)"
 
       cam_dir=$CAM_BASE_DIR/$(date +%F)/${CAM}/_raw
       if [[ ! -d $cam_dir ]]; then
-        fstatus "Detected date change. Creating $cam_dir and retrying..."
+        fstatus_notify "Detected date change. Creating $cam_dir and retrying..."
         # only condition where loop continues
         continue
       fi
       # unknown error; don't try to recover
+      fstatus_notify "$CMD exited with error ($status)"
       exit $status
     fi
     # get out of this loop on success
@@ -217,37 +217,44 @@ supervise_record() {
   done
 }
 
+init() {
+  HOST=${1:-localhost}
+  CAM=$2
+  pulse_host=mak.local
+
+  if [[ $HOST == ing-*.local ]]; then
+    ing_cam=${HOST%%.*}
+    ing_cam=${ing_cam#ing-}
+    ing_cam=${ing_cam//-/}
+    CAM=${CAM:-$ing_cam}
+  elif [[ -z $CAM ]]; then
+    echo "Assumed MediaMTX source. Must pass path (camera name) as third argument." >&2
+    exit 1
+  fi
+
+  # Either points to mediamtx or camera/Thingino directly.
+  RTSP_URL=$(get_rtsp_url) || exit 1
+  echo "RTSP Source: $RTSP_URL" >&2
+
+  echo "Streaming $CAM from $HOST" >&2
+}
+
 CAM_BASE_DIR=${CAM_BASE_DIR:-$HOME/Export/cam-proxy/recordings}
 
-script_dir=$(dirname "$0")
-
 CMD=${1//-/_}
-HOST=${2:-localhost}
-CAM=$3
-pulse_host=mak.local
-
-if [[ $HOST == ing-*.local ]]; then
-  ing_cam=${HOST%%.*}
-  ing_cam=${ing_cam#ing-}
-  ing_cam=${ing_cam//-/}
-  CAM=${CAM:-$ing_cam}
-elif [[ -z $CAM ]]; then
-  echo "Assumed MediaMTX source. Must pass path (camera name) as third argument." >&2
-  exit 1
-fi
-
-# Either points to mediamtx or camera/Thingino directly.
-RTSP_URL=$(get_rtsp_url) || exit 1
-echo "RTSP Source: $RTSP_URL" >&2
-
-echo "Streaming $CAM from $HOST" >&2
+shift
 
 case "$CMD" in
 record*)
+  init "$@"
   supervise_record
   ;;
 relay)
+  init "$@"
   relay
+  ;;
+notify)
+  fstatus_notify "$@"
   ;;
 *)
   echo "Invalid subcommand: $CMD" >&2

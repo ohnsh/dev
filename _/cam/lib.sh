@@ -1,3 +1,6 @@
+SCRIPT_NAME=$(basename "$0")
+SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+
 mdns_resolve() {
   local host=$1
   if command -v avahi-resolve &>/dev/null; then
@@ -14,8 +17,7 @@ mdns_resolve() {
 # sourcing all {.env,.env.*} files along the way. Sourcing happens with the `allexport`
 # shell option set so that the environment is modified.
 load_dotenv() {
-  local script_dir=$(dirname "${BASH_SOURCE[0]}")
-  local dir=$script_dir
+  local dir=$SCRIPT_DIR
   local dotenv i
   local stack=()
 
@@ -44,14 +46,30 @@ load_dotenv() {
   set +o allexport
 }
 
+_fstatus() {
+  printf "[%s %s] %s\n" \
+    "$SCRIPT_NAME" \
+    "$(date +"%m-%d %T")" \
+    "$*"
+}
+
 fstatus() {
   # Log to stderr and FIFO if available.
   # Detect if the FIFO has a reader, to prevent blocking.
   if [[ -w $STATUS_FIFO ]] && fuser "$STATUS_FIFO" &>/dev/null; then
-    printf "%s\t%s\n" "${script_name:-$0}" "$*" | tee "$STATUS_FIFO" >&2
+    _fstatus "$@" | tee "$STATUS_FIFO" >&2
   else
-    printf "%s*\t%s\n" "${script_name:-$0}" "$*" >&2
+    _fstatus "$@" >&2
   fi
+}
+
+notify() {
+  local msg=$1
+  curl -fsL -d "$msg" https://ntfy.sh/ohnsh-push &>/dev/null
+}
+
+fstatus_notify() {
+  _fstatus "$@" | tee >(notify @-) >&2
 }
 
 default_hosts=(ing-wuuk.local ing-wyze-1.local mak.local)
