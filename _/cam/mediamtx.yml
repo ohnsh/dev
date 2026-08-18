@@ -875,11 +875,15 @@ paths:
     source: rtsp://thingino:thingino@ing-wyze-1.local:554/ch0
     sourceOnDemand: yes
 
+  wyze2:
+    source: rtsp://thingino:thingino@ing-wyze-2.local:554/ch0
+    sourceOnDemand: yes
+
   wuuk:
     source: rtsp://thingino:thingino@ing-wuuk.local:554/ch0
     sourceOnDemand: yes
 
-  "~^(wuuk|wyze1)-patch$":
+  "~^(wuuk|wyze1|wyze2)-patch$":
     runOnDemand: >
       ffmpeg -v warning
       -i rtsp://localhost:$RTSP_PORT/$G1

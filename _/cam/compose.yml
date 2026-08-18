@@ -18,6 +18,7 @@ services:
       - mak.local:$MAK_LOCAL_IP
       - ing-wuuk.local:$WUUK_LOCAL_IP
       - ing-wyze-1.local:$WYZE1_LOCAL_IP
+      - ing-wyze-2.local:$WYZE2_LOCAL_IP
 
     # explicit ports not needed for host network mode
     # ports:

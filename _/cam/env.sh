@@ -10,9 +10,16 @@ mdns_resolve() {
 MAK_LOCAL_IP=$(mdns_resolve mak.local)
 WUUK_LOCAL_IP=$(mdns_resolve ing-wuuk.local)
 WYZE1_LOCAL_IP=$(mdns_resolve ing-wyze-1.local)
+WYZE2_LOCAL_IP=$(mdns_resolve ing-wyze-2.local)
 PULSE_SERVER=tcp:mak.local:4713
 GID=$(id -g)
 
 # Export all vars for docker compose environment.
-export MAK_LOCAL_IP WUUK_LOCAL_IP WYZE1_LOCAL_IP PULSE_SERVER GID UID
+export \
+  MAK_LOCAL_IP \
+  WUUK_LOCAL_IP \
+  WYZE1_LOCAL_IP \
+  WYZE2_LOCAL_IP \
+  PULSE_SERVER \
+  GID UID
 # set +a
