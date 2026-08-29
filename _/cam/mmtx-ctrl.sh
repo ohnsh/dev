@@ -60,6 +60,10 @@ paths() {
   fi
 }
 
+readers() {
+  paths | jq '.items[].readers[]'
+}
+
 recordings() {
   local path=$1
   if [[ -n $path ]]; then
@@ -98,6 +102,7 @@ else
   paths [path]
   avail
   status
+  readers
   source-on <path>
   source-off <path>
   record-on <path>
