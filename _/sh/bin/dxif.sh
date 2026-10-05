@@ -36,8 +36,8 @@ should_skip() {
   return 1
 }
 
-script_path=$(which "$0" || echo "$0")
-js_path=$(dirname "$script_path")/parseDate.js
+SCRIPT_DIR=$(dirname "$0")
+js_path=$SCRIPT_DIR/parseDate.js
 
 get_dates() {
   local filename_date
@@ -77,7 +77,7 @@ move() {
   memo-* | *.flac | *.wav | *.WAV)
     catdir=_memo
     ;;
-  VID_*.mp4 | PRO_VID_*.mp4 | *.insv)
+  VID_*.mp4 | PRO_VID_*.mp4 | *.insv | 20*_00[1-9]_00[1-9].mp4)
     catdir=_insta360
     ;;
   DJI_*.MP4)
@@ -101,6 +101,9 @@ move() {
     ;;
   quad_*.mp4)
     catdir="_quad"
+    ;;
+  quad-priv_*.mp4)
+    catdir="_quad-priv"
     ;;
   esac
 
